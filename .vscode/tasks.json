@@ -1,0 +1,57 @@
+{
+  "tasks": [
+    {
+      "type": "process",
+      "label": "clang++: selected file",
+      "command": "/usr/bin/clang++",
+      "args": [
+        "-std=c++26",
+        "-g",
+        "-Wall",
+        "-o ${workspaceFolder}/build/Debug/${workspaceFolderBasename}",
+        "${workspaceFolder}/src/${fileBasename}"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}/src"
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": []
+    },
+    {
+      "type": "cmake",
+      "label": "CMake: build",
+      "command": "build",
+      "targets": [
+        "cmake_template"
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": [],
+      "detail": "CMake template build task"
+    },
+    {
+      "type": "process",
+      "command": "/usr/bin/env",
+      "args": [
+        "CC=clang",
+        "CFLAGS=-g -Wall",
+        "make",
+        "${fileBasenameNoExtension}"
+      ],
+      "options": {
+        "cwd": "${fileDirname}"
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "label": "makelldb: selected file"
+    }
+  ],
+  "version": "2.0.0"
+}
