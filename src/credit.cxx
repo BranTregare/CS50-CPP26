@@ -60,7 +60,7 @@ inline auto stride = [](std::size_t Stride_Size, auto Return_First) {
 inline auto is_valid_checksum = [](auto Check_Sum) { return Check_Sum % 10 == 0 ? true : false; };
 // helper functions
 // validate cardnumber return credit:CardType
-auto validate_card_number(auto Card_Number)
+auto validate_card_number(auto Card_Number) -> credit::card_type_t
 {
   // count number of digits in a long long;
   auto Card_Num_Digits = num_digits(Card_Number);
@@ -75,10 +75,10 @@ auto validate_card_number(auto Card_Number)
   auto Card_Num = Card_Num_Reversed | std::views::reverse;
   // gather elements using views
   auto Mul_Sum = Card_Num_Reversed                              //
-                 | std::views::filter(credit::stride(2, false)) //
+                 | std::views::filter(stride(2, false)) //
                  | std::views::transform(multiply_by_2);
   auto Only_Sum = Card_Num_Reversed //
-                  | std::views::filter(credit::stride(2, true));
+                  | std::views::filter(stride(2, true));
   auto Check_Sum =
       // Accumulate Mul_Sum by digits given 1,2,12: 1+2+1+2 = 6 and not 1+2+12 = 15
       std::accumulate(Mul_Sum.begin(), Mul_Sum.end(), 0, sum_by_digits) +
