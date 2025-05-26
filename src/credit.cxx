@@ -136,7 +136,6 @@ auto validate_card_number(auto Card_Number)
 int main(void)
 {
   auto Card_Number = 0LL;
-
   // get input from user
   do {
     std::print("Number: ");
