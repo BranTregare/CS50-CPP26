@@ -9,7 +9,7 @@
 
 namespace credit
 {
-  // type definitions
+// type definitions
 enum class CardType
 {
   AMEX,
@@ -47,7 +47,7 @@ inline auto vectorize_number = [](auto& Vector, auto Number) {
     Number /= 10;
   }
 };
-// 
+//
 inline auto stride = [](std::size_t StrideSize, auto ReturnFirst) {
   auto temp = -1;
   if (!ReturnFirst) temp = 0;
@@ -69,7 +69,7 @@ auto validate_card_number(auto Card_Number)
   Card_Number_Reversed_Array.reserve(Card_Num_Digits);
   // transpose all digits in the CardNumber into the vector
   vectorize_number(Card_Number_Reversed_Array,
-                  Card_Number); // Number vectorized. NB number is reversed. last Digit of CardNumber first.
+                   Card_Number); // Number vectorized. NB number is reversed. last Digit of CardNumber first.
   // copy ReversedArray and reverse. We get iriginal order. Needed for cardtype determination.
   std::vector<std::uint8_t> Card_Number_Array;
   Card_Number_Array.reserve(Card_Num_Digits);
@@ -81,24 +81,25 @@ auto validate_card_number(auto Card_Number)
   // OnlySum
   auto Elements_To_Only_Sum = std::views::filter(Card_Number_Reversed_Array, stride(2, true));
   // Modify using transform and MultiplyBy2;
-  std::transform(Elements_To_Mul_And_Sum.begin(), Elements_To_Mul_And_Sum.end(), Elements_To_Mul_And_Sum.begin(),
-                 multiply_by_2); // multiply elements by 2. NB inplace Multiply, we are modifying CardNumberReversedArray
+  std::transform(
+      Elements_To_Mul_And_Sum.begin(), Elements_To_Mul_And_Sum.end(), Elements_To_Mul_And_Sum.begin(),
+      multiply_by_2); // multiply elements by 2. NB inplace Multiply, we are modifying CardNumberReversedArray
   // Accumulate ElementsToMulAndSum by digits given 1,2,12: 1+2+1+2 = 6 and not 1+2+12 = 15
-  auto Mul_Sum_Value = std::accumulate(Elements_To_Mul_And_Sum.begin(), Elements_To_Mul_And_Sum.end(), 0, sum_by_digits);
+  auto Mul_Sum_Value =
+      std::accumulate(Elements_To_Mul_And_Sum.begin(), Elements_To_Mul_And_Sum.end(), 0, sum_by_digits);
   // Accumulate ElementsToOnlySum
-  auto Only_Sum_Value = std::accumulate(Elements_To_Only_Sum.begin(), Elements_To_Only_Sum.end(), 0
-                                      );
+  auto Only_Sum_Value = std::accumulate(Elements_To_Only_Sum.begin(), Elements_To_Only_Sum.end(), 0);
   // Calculate CheckSum
   auto Check_Sum = Mul_Sum_Value + Only_Sum_Value;
   if (has_valid_checksum(Check_Sum)) // Now check type of card, AMEX, MASTERCARD,VISA
   {
     switch (Card_Num_Digits)
     {
-    case 13:                       // POSSIBLE VISA CARD
+    case 13:                         // POSSIBLE VISA CARD
       if (Card_Number_Array[0] == 4) // first digit is 4 valid VISA Card;
         return credit::CardType::VISA;
       break;
-    case 15:                       // POSSIBLE AMEX CARD
+    case 15:                         // POSSIBLE AMEX CARD
       if (Card_Number_Array[0] == 3) // First digit
       {
         if (Card_Number_Array[1] == 4 || Card_Number_Array[1] == 7) // Second Digit
@@ -107,7 +108,7 @@ auto validate_card_number(auto Card_Number)
         }
       }
       break;
-    case 16:                       // POSSIBLE VISA or MASTERCARD
+    case 16:                         // POSSIBLE VISA or MASTERCARD
       if (Card_Number_Array[0] == 4) // VISA CARD
       {
         return credit::CardType::VISA;
@@ -148,8 +149,9 @@ int main(void)
     std::string Card_Number_string;
     std::getline(std::cin, Card_Number_string);
     std::stringstream Long_Stream(Card_Number_string);
-    if (std::find_if_not(Card_Number_string.begin(), Card_Number_string.end(), [](char c) { return std::isdigit(c); }) ==
-        Card_Number_string.end()) // test sCardnumber: Are all digits? i.e 4003600000000014 vs 4003-6000-0000-0014
+    if (std::find_if_not(Card_Number_string.begin(), Card_Number_string.end(), [](char c) {
+          return std::isdigit(c);
+        }) == Card_Number_string.end()) // test sCardnumber: Are all digits? i.e 4003600000000014 vs 4003-6000-0000-0014
     {
       if (Long_Stream >> Card_Number) // this is a number break out of while loop
       {
