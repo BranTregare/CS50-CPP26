@@ -1,4 +1,6 @@
 #include <algorithm>
+#include <cassert>
+#include <cstddef>
 #include <iostream>
 #include <numeric>
 #include <print>
@@ -6,7 +8,6 @@
 #include <sstream>
 #include <unordered_map>
 #include <vector>
-
 namespace credit
 {
 // type definitions
@@ -47,13 +48,22 @@ inline auto vectorize_number = [](auto& Vector, auto Number) {
     Number /= 10;
   }
 };
-//
-inline auto stride = [](std::size_t Stride_Size, auto Return_First) {
-  auto temp = -1;
-  if (!Return_First) temp = 0;
-  return [s = temp, Stride_Size](auto const&) mutable {
-    s = (s + 1) % Stride_Size;
-    return s == 0 ? true : false;
+/*
+// use with std::ranges::filter to give every other stride value + offset
+// so given range 0,1,2,3,4,5 :
+// stride(2) => 0,2,4
+// stride(2,1) => 1,3,5
+// stride(3) => 0,3
+// stride(3,1) => 1,4
+// stride(3,2) => 2,5
+// */
+inline auto stride = [](std::size_t Stride_Size, std::size_t Offset = 0) {
+  assert(Offset < Stride_Size);
+  std::size_t Stride_Start = -1;
+  if (Offset != 0) Stride_Start += Offset;
+  return [Stride = Stride_Start, Stride_Size](auto const&) mutable {
+    Stride = (Stride + 1) % Stride_Size;
+    return Stride == 0 ? true : false;
   };
 };
 // validate creditcard luhn checksum
@@ -74,11 +84,11 @@ auto validate_card_number(auto Card_Number) -> credit::card_type_t
   // create reversed view of Card_Number_Reversed. i.e. natural order
   auto Card_Num = Card_Num_Reversed | std::views::reverse;
   // gather elements using views
-  auto Mul_Sum = Card_Num_Reversed                              //
-                 | std::views::filter(stride(2, false)) //
+  auto Mul_Sum = Card_Num_Reversed                  //
+                 | std::views::filter(credit::stride(2, 1)) //
                  | std::views::transform(multiply_by_2);
   auto Only_Sum = Card_Num_Reversed //
-                  | std::views::filter(stride(2, true));
+                  | std::views::filter(credit::stride(2));
   auto Check_Sum =
       // Accumulate Mul_Sum by digits given 1,2,12: 1+2+1+2 = 6 and not 1+2+12 = 15
       std::accumulate(Mul_Sum.begin(), Mul_Sum.end(), 0, sum_by_digits) +
