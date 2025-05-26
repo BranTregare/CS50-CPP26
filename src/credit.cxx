@@ -10,7 +10,7 @@
 namespace credit
 {
 // type definitions
-enum class CardType
+enum class card_type_t
 {
   AMEX,
   MASTERCARD,
@@ -18,11 +18,11 @@ enum class CardType
   INVALID
 };
 // Map cardtype to std::string_view for printing
-auto Card_Type_To_String_View = std::unordered_map<const CardType, const std::string_view>{
-    {CardType::AMEX, "AMEX"},
-    {CardType::MASTERCARD, "MASTERCARD"},
-    {CardType::VISA, "VISA"},
-    {CardType::INVALID, "INVALID"},
+auto Card_Type_To_String_View = std::unordered_map<const card_type_t, const std::string_view>{
+    {card_type_t::AMEX, "AMEX"},
+    {card_type_t::MASTERCARD, "MASTERCARD"},
+    {card_type_t::VISA, "VISA"},
+    {card_type_t::INVALID, "INVALID"},
 };
 // helper named lambdas
 // number of digits in a credit card number
@@ -91,21 +91,21 @@ auto validate_card_number(auto Card_Number)
     {
     case 13:                // POSSIBLE VISA CARD
       if (Card_Num[0] == 4) // first digit is 4 valid VISA Card;
-        return credit::CardType::VISA;
+        return credit::card_type_t::VISA;
       break;
     case 15:                // POSSIBLE AMEX CARD
       if (Card_Num[0] == 3) // First digit
       {
         if (Card_Num[1] == 4 || Card_Num[1] == 7) // Second Digit
         {
-          return credit::CardType::AMEX;
+          return credit::card_type_t::AMEX;
         }
       }
       break;
     case 16:                // POSSIBLE VISA or MASTERCARD
       if (Card_Num[0] == 4) // VISA CARD
       {
-        return credit::CardType::VISA;
+        return credit::card_type_t::VISA;
       }
       else // MASTERCARD CHECK
       {
@@ -118,7 +118,7 @@ auto validate_card_number(auto Card_Number)
           case 3:
           case 4:
           case 5:
-            return credit::CardType::MASTERCARD;
+            return credit::card_type_t::MASTERCARD;
           default:
             break;
           }
@@ -126,10 +126,10 @@ auto validate_card_number(auto Card_Number)
       }
       break;
     default:
-      return credit::CardType::INVALID;
+      return credit::card_type_t::INVALID;
     }
   }
-  return credit::CardType::INVALID;
+  return credit::card_type_t::INVALID;
 }
 } // namespace credit
 
