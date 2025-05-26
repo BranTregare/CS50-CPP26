@@ -49,7 +49,7 @@ inline auto vectorize_number = [](auto& Vector, auto Number) {
   }
 };
 /*
-// use with std::ranges::filter to give every other stride value + offset
+// use with std::views::filter to give every other stride value + offset
 // so given range 0,1,2,3,4,5 :
 // stride(2) => 0,2,4
 // stride(2,1) => 1,3,5
