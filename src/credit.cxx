@@ -31,7 +31,7 @@ auto num_digits = [](auto Number) {
   while (Number)
   {
     Number /= 10;
-    Digits++;
+    ++Digits;
   }
   return Digits;
 };
