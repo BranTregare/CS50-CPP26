@@ -26,7 +26,7 @@ auto Card_Type_To_String_View = std::unordered_map<const CardType, const std::st
 };
 // helper named lambdas
 // number of digits in a credit card number
-auto num_digits = [](auto Number) {
+inline auto num_digits = [](auto Number) {
   int Digits = 0;
   while (Number)
   {
@@ -36,9 +36,9 @@ auto num_digits = [](auto Number) {
   return Digits;
 };
 // multiply a value by 2. used with std::transform
-auto multiply_by_2 = [](auto Value) { return Value * 2; };
+inline auto multiply_by_2 = [](auto Value) { return Value * 2; };
 // sum by individual digits
-auto sum_by_digits = [](auto Sum, auto Val) { return Val > 9 ? Sum + (Val - 9) : Sum + Val; };
+inline auto sum_by_digits = [](auto Sum, auto Val) { return Val > 9 ? Sum + (Val - 9) : Sum + Val; };
 // convert number to and array of std::uint8_t
 inline auto vectorize_number = [](auto& Vector, auto Number) {
   while (Number != 0)
@@ -48,11 +48,11 @@ inline auto vectorize_number = [](auto& Vector, auto Number) {
   }
 };
 //
-inline auto stride = [](std::size_t StrideSize, auto ReturnFirst) {
+inline auto stride = [](std::size_t Stride_Size, auto Return_First) {
   auto temp = -1;
-  if (!ReturnFirst) temp = 0;
-  return [s = temp, StrideSize](auto const&) mutable {
-    s = (s + 1) % StrideSize;
+  if (!Return_First) temp = 0;
+  return [s = temp, Stride_Size](auto const&) mutable {
+    s = (s + 1) % Stride_Size;
     return s == 0 ? true : false;
   };
 };
