@@ -79,4 +79,4 @@ vgcore.*
 *.core
 *.stackdump
 *.orig
-./cache
+**/.cache/
