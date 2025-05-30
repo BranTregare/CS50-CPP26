@@ -204,6 +204,8 @@ constexpr card_type_t validate_card_number(std::uint64_t card_number)
   return card_type_t::INVALID;
 }
 
+
+
 } // namespace credit
 int main()
 {
