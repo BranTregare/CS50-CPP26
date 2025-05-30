@@ -1,5 +1,7 @@
 # Credit Card Validator – CS50 Problem Set 1 (Modern C++26 Edition)
 
+> Part of the [`CS50-CPP26`](https://github.com/BranTregare/CS50-CPP26) repository.
+
 This is a modern C++26 implementation of the **CS50 Problem Set 1: Credit** problem. It validates credit card numbers using the Luhn algorithm and identifies card types (AMEX, MASTERCARD, VISA).
 
 ---
@@ -30,6 +32,13 @@ This project is a **didactic and demonstrator implementation**, intended to:
 
 ---
 
+## ⚠️ Disclaimer
+
+This code is provided for **educational and demonstrative purposes only**.  
+It is **not production-ready** and is shared *as-is*, **without warranty or guarantee**.
+
+---
+
 ## 🧪 Testing
 
 - **Compile-time:** Includes `static_assert` tests in `credit_test.cxx` to validate logic at build time.
@@ -39,31 +48,40 @@ This project is a **didactic and demonstrator implementation**, intended to:
 
 ## 📁 Project Layout
 
-credit/
-├── CMakeLists.txt
-├── src/
-│ ├── credit.cxx # Main implementation
-│ └── include/
-│ └── stopwatch.hxx # Lightweight stopwatch (optional utility)
-├── test/
-│ ├── credit_test.cxx # Compile-time static_assert tests
-│ ├── credit_runtime_test.cxx# Catch2 runtime unit tests
-│ └── include/
-│ └── test_util.hxx # Shared test helpers
-
+    credit/
+    ├── CMakeLists.txt
+    ├── src/
+    │   ├── credit.cxx              # Main implementation
+    │   └── include/
+    │       └── stopwatch.hxx       # Lightweight stopwatch (optional utility)
+    ├── test/
+    │   ├── credit_test.cxx         # Compile-time static_assert tests
+    │   ├── credit_runtime_test.cxx # Catch2 runtime unit tests
+    │   └── include/
+    │       └── test_util.hxx       # Shared test helpers
 
 ---
 
 ## ⚙️ Build Instructions
 
-Requires:
+**Requirements:**
 
-- **Clang++ 20.1.6+**
-- **CMake 3.31.6+**
-- **Ninja (multi-target)**
+- `clang++` 20.1.6+
+- `cmake` 3.31.6+
+- `ninja` (multi-target)
+
+**Build and test:**
 
 ```bash
 mkdir build && cd build
 cmake -G Ninja ..
 ninja
 ctest --verbose
+```
+
+---
+
+## 📄 License
+
+This project is licensed under the [MIT License](./LICENSE).  
+© 2025 [Bran Tregare](https://github.com/BranTregare). Attribution appreciated.
