@@ -2,7 +2,7 @@
 
 namespace test
 {
-using credit::card_type_t;
+using credit::CardType;
 using credit::test::test_validate;
 
 // Valid cards

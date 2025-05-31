@@ -1,7 +1,7 @@
 #include "test_util.hxx" // Your helper macros or test types
 #include <catch2/catch_test_macros.hpp>
 
-using credit::card_type_t;
+using credit::CardType;
 using credit::test::test_validate;
 
 TEST_CASE("Valid card numbers pass Luhn and match card type", "[valid]")
