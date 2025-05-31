@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <array>
 #include <cctype>
+#include <cstddef>
 #include <cstdint>
 #include <iostream>
 #include <limits>
@@ -30,16 +31,9 @@ constexpr auto card_type_to_index = [](card_type_t ct) noexcept -> std::size_t {
   return static_cast<std::size_t>(ct);
 };
 
-/*
 // Convert character to uint8_t (strong typing, avoids ambiguity)
 constexpr auto char_to_uint8_t = [](char c) noexcept -> std::uint8_t {
   return static_cast<std::uint8_t>(c);
-};
-*/
-
-// Validate if character is an ASCII digit
-constexpr auto is_ascii_digit = [](char c) noexcept -> bool {
-  return std::isdigit(static_cast<unsigned char>(c));
 };
 
 // Convert int to uint8_t explicitly
@@ -47,19 +41,24 @@ constexpr auto to_uint8_t = [](int val) noexcept -> std::uint8_t {
   return static_cast<std::uint8_t>(val);
 };
 
+// Validate if character is an ASCII digit
+constexpr auto is_ascii_digit = [](char c) noexcept -> bool {
+  return std::isdigit(char_to_uint8_t(c));
+};
+
 // Convert range distance to int (e.g., for digit count)
-constexpr auto distance_to_int = [](auto first, auto last) noexcept -> int {
-  return static_cast<int>(std::ranges::distance(first, last));
+constexpr auto distance_to_size_t = [](auto first, auto last) noexcept {
+  return static_cast<std::size_t>(std::ranges::distance(first, last));
 };
 
 // Credit card constraints
-constexpr int max_digits = 16;
+constexpr std::size_t max_digits = 16;
 constexpr auto base = 10;
 
 // Compute number of decimal digits in an integer
-constexpr auto num_digits(std::uint64_t number) noexcept -> int
+constexpr auto num_digits(std::uint64_t number) noexcept
 {
-  int digits = 0;
+  std::size_t digits = 0;
   while (number != 0U)
   {
     number /= base;
@@ -112,9 +111,9 @@ public:
 // Convert a number to reversed digit_sequence
 constexpr auto vectorise_number(std::uint64_t number) noexcept -> digit_sequence
 {
-  const int count = num_digits(number);
+  const auto count = num_digits(number);
   digit_sequence ds(count);
-  for (int i = 0; i < count; ++i)
+  for (std::size_t i = 0; i < count; ++i)
   {
     ds.digits[i] = to_uint8_t(number % base);
     number /= base;
@@ -167,7 +166,7 @@ constexpr card_type_t validate_card_number(std::uint64_t card_number)
     return card_type_t::INVALID;
 
   const auto digits = vectorise_number(card_number);
-  const int digit_count = distance_to_int(digits.cbegin(), digits.cend());
+  const auto digit_count = distance_to_size_t(digits.cbegin(), digits.cend());
 
   if (digit_count < 13 || digit_count > 16)
     return card_type_t::INVALID;
@@ -177,8 +176,8 @@ constexpr card_type_t validate_card_number(std::uint64_t card_number)
     return card_type_t::INVALID;
 
   const auto &it = digits.crbegin();
-  const int msd = *it; // Most significant digit
-  const int second_msd = (digit_count >= 2) ? *(it + 1) : 0;
+  const auto msd = *it; // Most significant digit
+  const auto second_msd = (digit_count >= 2) ? *(it + 1) : to_uint8_t(0);
 
   // Card type inference based on prefix and length
   switch (digit_count)
