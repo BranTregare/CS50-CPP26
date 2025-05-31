@@ -1,6 +1,6 @@
 #include "test_util.hxx"
 
-namespace test
+namespace credit::test
 {
 using credit::CardType;
 using credit::test::test_validate;

@@ -144,15 +144,15 @@ constexpr auto is_valid_checksum(int sum) noexcept -> bool
 };
 
 // Luhn: Sum digits at odd positions (not doubled)
-constexpr auto accumulate_odd_digits = [](const DigitSequence &ds) {
-  auto luhn_identity_digits = std::ranges::subrange(ds.cbegin(), ds.cend()) //
+constexpr auto accumulate_odd_digits = [](const DigitSequence &digit_sequence) {
+  auto luhn_identity_digits = std::ranges::subrange(digit_sequence.cbegin(), digit_sequence.cend()) //
                               | std::views::filter(stride(2));
   return std::accumulate(luhn_identity_digits.begin(), luhn_identity_digits.end(), 0);
 };
 
 // Luhn: Double every second digit (even positions), then reduce
-constexpr auto accumulate_even_digits = [](const DigitSequence &ds) {
-  auto luhn_doubled_digits = std::ranges::subrange(ds.cbegin(), ds.cend()) | std::views::filter(stride(2, 1)) |
+constexpr auto accumulate_even_digits = [](const DigitSequence &digit_sequence) {
+  auto luhn_doubled_digits = std::ranges::subrange(digit_sequence.cbegin(), digit_sequence.cend()) | std::views::filter(stride(2, 1)) |
                              std::views::transform(multiply_by_2);
   return std::accumulate(luhn_doubled_digits.begin(), luhn_doubled_digits.end(), 0, luhn_sum);
 };
