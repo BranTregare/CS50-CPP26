@@ -1,8 +1,5 @@
 #include <algorithm>
 #include <array>
-#include <cctype>
-#include <cstddef>
-#include <cstdint>
 #include <iostream>
 #include <limits>
 #include <numeric>
@@ -15,7 +12,7 @@ namespace credit
 {
 
 // Strongly typed enumeration for card types
-enum class card_type_t : std::uint8_t
+enum class CardType : std::uint8_t
 {
   AMEX,
   MASTERCARD,
@@ -27,7 +24,7 @@ enum class card_type_t : std::uint8_t
 constexpr std::array<std::string_view, 4> map_card_type_as_string_view{"AMEX", "MASTERCARD", "VISA", "INVALID"};
 
 // Convert card_type_t to std::size_t index into map array
-constexpr auto card_type_to_index = [](card_type_t ct) noexcept -> std::size_t {
+constexpr auto card_type_to_index = [](CardType ct) noexcept -> std::size_t {
   return static_cast<std::size_t>(ct);
 };
 
@@ -52,8 +49,8 @@ constexpr auto distance_to_size_t = [](auto first, auto last) noexcept {
 };
 
 // Credit card constraints
-constexpr std::size_t max_digits = 16;
-constexpr auto base = 10;
+constexpr std::size_t MAX_DIGITS = 16;
+constexpr auto BASE = 10;
 
 // Compute number of decimal digits in an integer
 constexpr auto num_digits(std::uint64_t number) noexcept
@@ -61,23 +58,23 @@ constexpr auto num_digits(std::uint64_t number) noexcept
   std::size_t digits = 0;
   while (number != 0U)
   {
-    number /= base;
+    number /= BASE;
     ++digits;
   }
   return digits;
 }
 
 // Compact struct to represent a credit card number as a reversed digit array
-struct digit_sequence final
+struct DigitSequence final
 {
 private:
-  std::array<std::uint8_t, max_digits> digits{};
+  std::array<std::uint8_t, MAX_DIGITS> digits{};
   const int count;
 
-  friend constexpr digit_sequence vectorise_number(std::uint64_t) noexcept;
+  friend constexpr DigitSequence vectorise_number(std::uint64_t) noexcept;
 
 public:
-  explicit constexpr digit_sequence(int c) noexcept : count{c}
+  explicit constexpr DigitSequence(int c) noexcept : count{c}
   {
   }
 
@@ -109,14 +106,14 @@ public:
 };
 
 // Convert a number to reversed digit_sequence
-constexpr auto vectorise_number(std::uint64_t number) noexcept -> digit_sequence
+constexpr auto vectorise_number(std::uint64_t number) noexcept -> DigitSequence
 {
   const auto count = num_digits(number);
-  digit_sequence ds(count);
+  DigitSequence ds(count);
   for (std::size_t i = 0; i < count; ++i)
   {
-    ds.digits[i] = to_uint8_t(number % base);
-    number /= base;
+    ds.digits[i] = to_uint8_t(number % BASE);
+    number /= BASE;
   }
   return ds;
 }
@@ -146,34 +143,34 @@ constexpr auto is_valid_checksum(int sum) noexcept -> bool
 };
 
 // Luhn: Sum digits at odd positions (not doubled)
-constexpr auto accumulate_odd_digits = [](const digit_sequence &ds) {
+constexpr auto accumulate_odd_digits = [](const DigitSequence &ds) {
   auto luhn_identity_digits = std::ranges::subrange(ds.cbegin(), ds.cend()) //
                               | std::views::filter(stride(2, 0));
   return std::accumulate(luhn_identity_digits.begin(), luhn_identity_digits.end(), 0);
 };
 
 // Luhn: Double every second digit (even positions), then reduce
-constexpr auto accumulate_even_digits = [](const digit_sequence &ds) {
+constexpr auto accumulate_even_digits = [](const DigitSequence &ds) {
   auto luhn_doubled_digits = std::ranges::subrange(ds.cbegin(), ds.cend()) | std::views::filter(stride(2, 1)) |
                              std::views::transform(multiply_by_2);
   return std::accumulate(luhn_doubled_digits.begin(), luhn_doubled_digits.end(), 0, luhn_sum);
 };
 
 // Main card validator
-constexpr card_type_t validate_card_number(std::uint64_t card_number)
+constexpr CardType validate_card_number(std::uint64_t card_number)
 {
   if (card_number == 0)
-    return card_type_t::INVALID;
+    return CardType::INVALID;
 
   const auto digits = vectorise_number(card_number);
   const auto digit_count = distance_to_size_t(digits.cbegin(), digits.cend());
 
   if (digit_count < 13 || digit_count > 16)
-    return card_type_t::INVALID;
+    return CardType::INVALID;
 
   const int checksum = accumulate_odd_digits(digits) + accumulate_even_digits(digits);
   if (!is_valid_checksum(checksum))
-    return card_type_t::INVALID;
+    return CardType::INVALID;
 
   const auto &it = digits.crbegin();
   const auto msd = *it; // Most significant digit
@@ -184,23 +181,23 @@ constexpr card_type_t validate_card_number(std::uint64_t card_number)
   {
   case 13:
     if (msd == 4)
-      return card_type_t::VISA;
+      return CardType::VISA;
     break;
   case 15:
     if (msd == 3 && (second_msd == 4 || second_msd == 7))
-      return card_type_t::AMEX;
+      return CardType::AMEX;
     break;
   case 16:
     if (msd == 4)
-      return card_type_t::VISA;
+      return CardType::VISA;
     if (msd == 5 && (second_msd >= 1 && second_msd <= 5))
-      return card_type_t::MASTERCARD;
+      return CardType::MASTERCARD;
     break;
   default:
-    return card_type_t::INVALID;
+    return CardType::INVALID;
   }
 
-  return card_type_t::INVALID;
+  return CardType::INVALID;
 }
 
 
@@ -209,7 +206,7 @@ constexpr card_type_t validate_card_number(std::uint64_t card_number)
 int main()
 {
   std::uint64_t card_number = 0;
-  constexpr std::size_t max_input_digits = static_cast<std::size_t>(credit::max_digits);
+  constexpr std::size_t MAX_INPUT_DIGITS = static_cast<std::size_t>(credit::MAX_DIGITS);
 
   while (true)
   {
@@ -230,9 +227,9 @@ int main()
       continue;
     }
 
-    if (input.size() > max_input_digits)
+    if (input.size() > MAX_INPUT_DIGITS)
     {
-      std::println("Invalid input. Maximum supported length is {} digits.", max_input_digits);
+      std::println("Invalid input. Maximum supported length is {} digits.", MAX_INPUT_DIGITS);
       continue;
     }
 

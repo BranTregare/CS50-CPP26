@@ -10,13 +10,13 @@ namespace credit::test {
 
 // Compile-time check for valid input size
 constexpr bool is_valid_test_input(std::uint64_t number) noexcept {
-  return num_digits(number) <= max_digits;
+  return num_digits(number) <= MAX_DIGITS;
 }
 
 // consteval-safe wrappeUSE_SAFE_VALIDATEr for test validation
-constexpr card_type_t safe_validate(std::uint64_t number) {
+constexpr CardType safe_validate(std::uint64_t number) {
   if (!is_valid_test_input(number)) {
-    return card_type_t::INVALID;
+    return CardType::INVALID;
   }
   return validate_card_number(number);
 }
