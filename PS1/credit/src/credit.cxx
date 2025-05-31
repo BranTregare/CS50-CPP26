@@ -1,8 +1,5 @@
 #include <algorithm>
 #include <array>
-#include <cctype>
-#include <cstddef>
-#include <cstdint>
 #include <iostream>
 #include <limits>
 #include <numeric>
