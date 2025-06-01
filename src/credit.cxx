@@ -245,7 +245,7 @@ int main()
     break;
   }
 
-  dconst auto type = credit::validate_card_number(card_number);
+  const auto type = credit::validate_card_number(card_number);
   std::println("{}", credit::CardType_to_string_view[credit::CardType_to_index(type)]);
   return 0;
 }
