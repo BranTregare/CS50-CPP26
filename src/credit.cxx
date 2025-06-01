@@ -22,26 +22,26 @@ enum class CardType : std::uint8_t
 };
 
 // Map card type enum to string_view (for display purposes)
-constexpr std::array<std::string_view, 4> map_card_type_as_string_view{"AMEX", "MASTERCARD", "VISA", "INVALID"};
+constexpr std::array<std::string_view, 4> CardType_to_string_view{"AMEX", "MASTERCARD", "VISA", "INVALID"};
 
 // Convert card_type_t to std::size_t index into map array
-constexpr auto card_type_to_index = [](CardType cardType) noexcept -> std::size_t {
+constexpr auto CardType_to_index = [](CardType cardType) noexcept {
   return static_cast<std::size_t>(cardType);
 };
 
 // Convert character to uint8_t (strong typing, avoids ambiguity)
-constexpr auto char_to_uint8_t = [](char character) noexcept -> std::uint8_t {
+constexpr auto char_to_uint8_t = [](char character) noexcept {
   return static_cast<std::uint8_t>(character);
 };
 
 // Convert int to uint8_t explicitly
-constexpr auto to_uint8_t = [](int value) noexcept -> std::uint8_t {
+constexpr auto to_uint8_t = [](int value) noexcept {
   return static_cast<std::uint8_t>(value);
 };
 
 // Validate if character is an ASCII digit
-constexpr auto is_ascii_digit = [](char character) noexcept -> bool {
-  return std::isdigit(char_to_uint8_t(character));
+constexpr auto is_ascii_digit = [](char character) noexcept {
+  return std::isdigit(char_to_uint8_t(character)) ? true : false;
 };
 
 // Convert range distance to int (e.g., for digit count)
@@ -72,7 +72,7 @@ private:
   std::array<std::uint8_t, MAX_DIGITS> digits_{};
   const std::size_t count_;
 
-  friend constexpr DigitSequence vectorise_number(std::uint64_t) noexcept;
+  friend constexpr auto vectorise_number(std::uint64_t) noexcept;
 
 public:
   explicit constexpr DigitSequence(std::size_t count) noexcept : count_{count}
@@ -107,7 +107,7 @@ public:
 };
 
 // Convert a number to reversed digit_sequence
-constexpr auto vectorise_number(std::uint64_t card_number) noexcept -> DigitSequence
+constexpr auto vectorise_number(std::uint64_t card_number) noexcept
 {
   const auto count = num_digits(card_number);
   DigitSequence digit_sequence(count);
@@ -128,17 +128,17 @@ constexpr auto stride(std::size_t stride_size, std::size_t offset = 0) noexcept
 }
 
 // Multiply digit by 2 (for Luhn algorithm)
-constexpr auto multiply_by_2 = [](std::uint8_t d) noexcept -> int {
+constexpr auto multiply_by_2 = [](std::uint8_t d) noexcept {
   return d * 2;
 };
 
 // Sum function for Luhn doubling rule
-constexpr auto luhn_sum = [](int acc, int val) noexcept -> int {
+constexpr auto luhn_sum = [](int acc, int val) noexcept{
   return acc + (val > 9 ? val - 9 : val); // Split digits if > 9
 };
 
 // Luhn: checksum must be divisible by 10
-constexpr auto is_valid_checksum(int sum) noexcept -> bool
+constexpr auto is_valid_checksum(int sum) noexcept
 {
   return sum % 10 == 0;
 };
@@ -152,13 +152,13 @@ constexpr auto accumulate_odd_digits = [](const DigitSequence &digit_sequence) {
 
 // Luhn: Double every second digit (even positions), then reduce
 constexpr auto accumulate_even_digits = [](const DigitSequence &digit_sequence) {
-  auto luhn_doubled_digits = std::ranges::subrange(digit_sequence.cbegin(), digit_sequence.cend()) | std::views::filter(stride(2, 1)) |
-                             std::views::transform(multiply_by_2);
+  auto luhn_doubled_digits = std::ranges::subrange(digit_sequence.cbegin(), digit_sequence.cend()) |
+                             std::views::filter(stride(2, 1)) | std::views::transform(multiply_by_2);
   return std::accumulate(luhn_doubled_digits.begin(), luhn_doubled_digits.end(), 0, luhn_sum);
 };
 
 // Main card validator
-constexpr CardType validate_card_number(std::uint64_t card_number)
+constexpr auto validate_card_number(std::uint64_t card_number)
 {
   if (card_number == 0)
     return CardType::INVALID;
@@ -200,8 +200,8 @@ constexpr CardType validate_card_number(std::uint64_t card_number)
 
   return CardType::INVALID;
 }
-
 } // namespace credit
+
 int main()
 {
   std::uint64_t card_number = 0;
@@ -245,7 +245,7 @@ int main()
     break;
   }
 
-  const auto type = credit::validate_card_number(card_number);
-  std::println("{}", credit::map_card_type_as_string_view[credit::card_type_to_index(type)]);
+  dconst auto type = credit::validate_card_number(card_number);
+  std::println("{}", credit::CardType_to_string_view[credit::CardType_to_index(type)]);
   return 0;
 }
