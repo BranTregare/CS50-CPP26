@@ -23,6 +23,13 @@ enum class CardType : std::uint8_t
 // Map card type enum to string_view (for display purposes)
 constexpr std::array<std::string_view, 4> map_card_type_as_string_view{"AMEX", "MASTERCARD", "VISA", "INVALID"};
 
+constexpr std::array<std::pair<std::uint8_t, CardType>, 4> CardPrefixes = {{
+    {34, CardType::AMEX},
+    {37, CardType::AMEX},
+    {4, CardType::VISA},
+    {5, CardType::MASTERCARD}
+}};
+
 // Convert card_type_t to std::size_t index into map array
 constexpr auto card_type_to_index = [](CardType ct) noexcept -> std::size_t {
   return static_cast<std::size_t>(ct);
@@ -105,6 +112,17 @@ public:
   constexpr auto rend() const noexcept = delete;
 };
 
+constexpr CardType infer_card_type(const DigitSequence& ds) noexcept
+{
+    const auto prefix = *ds.cbegin()*10 + (*(ds.cbegin()+1)); // First two digits
+    for (const auto& [prefix_str , type] : CardPrefixes) {
+        if (prefix == prefix_str) {
+            return type;
+        }
+    }
+    return CardType::INVALID;
+}
+
 // Convert a number to reversed digit_sequence
 constexpr auto vectorise_number(std::uint64_t number) noexcept -> DigitSequence
 {
@@ -175,6 +193,8 @@ constexpr CardType validate_card_number(std::uint64_t card_number)
   const auto &it = digits.crbegin();
   const auto msd = *it; // Most significant digit
   const auto second_msd = (digit_count >= 2) ? *(it + 1) : to_uint8_t(0);
+
+  [[maybe_unused]]auto test = infer_card_type(digits);
 
   // Card type inference based on prefix and length
   switch (digit_count)

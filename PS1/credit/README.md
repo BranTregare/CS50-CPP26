@@ -44,6 +44,52 @@ It is **not production-ready** and is shared *as-is*, **without warranty or guar
 - **Compile-time:** Includes `static_assert` tests in `credit_test.cxx` to validate logic at build time.
 - **Runtime:** Uses [Catch2 v3](https://github.com/catchorg/Catch2) for unit tests in `credit_runtime_test.cxx`.
 
+### Compile-Time Failure as a Feature
+
+In this project, some invalid credit card inputs — such as numbers with more than 16 digits — are caught **at compile time**, not at runtime.
+
+Example: Overlong Input (Compile-Time Error)
+
+This test is intentionally commented out in `credit_test.cxx`:
+
+    // static_assert(test_validate(41111111111111112222ULL) == CardType::INVALID, "Too long");
+
+Why Does This Fail?
+
+Internally, credit card digits are stored in a fixed-size buffer:
+
+    std::array<std::uint8_t, 16> digits_;
+
+When `vectorise_number()` is called on a number with more than 16 digits, it attempts to write past the end of this buffer. Because the logic is marked `constexpr`, this triggers a compile-time failure.
+
+What’s the Benefit?
+
+- No runtime length checks are needed inside the Luhn logic.
+- The compiler enforces structural constraints before the program is built.
+- It demonstrates a fail-fast and safe-by-construction design.
+
+How to Teach This
+
+This is a great moment to explain:
+
+- The power of `constexpr` for enforcing correctness.
+- That the compiler isn’t just for translation — it can also act as a verifier.
+- Why defining limits as part of types and compile-time logic improves program safety.
+
+Optional: Make the Failure Explicit
+
+You can define a helper for visibility:
+
+    constexpr void assert_valid_input_size(std::uint64_t number) {
+        static_assert(num_digits(number) <= MAX_DIGITS, "Card number too long for digit buffer");
+    }
+
+And use it in your test file like this:
+
+    // assert_valid_input_size(41111111111111112222ULL); // Compile-time error
+
+This makes it clear why the program won’t compile, rather than just triggering an error deep inside the digit buffer logic.
+
 ---
 
 ## 📁 Project Layout
@@ -77,11 +123,3 @@ mkdir build && cd build
 cmake -G Ninja ..
 ninja
 ctest --verbose
-```
-
----
-
-## 📄 License
-
-This project is licensed under the [MIT License](./LICENSE).  
-© 2025 [Bran Tregare](https://github.com/BranTregare). Attribution appreciated.
