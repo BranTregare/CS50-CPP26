@@ -67,29 +67,6 @@ What’s the Benefit?
 - No runtime length checks are needed inside the Luhn logic.
 - The compiler enforces structural constraints before the program is built.
 - It demonstrates a fail-fast and safe-by-construction design.
-
-How to Teach This
-
-This is a great moment to explain:
-
-- The power of `constexpr` for enforcing correctness.
-- That the compiler isn’t just for translation — it can also act as a verifier.
-- Why defining limits as part of types and compile-time logic improves program safety.
-
-Optional: Make the Failure Explicit
-
-You can define a helper for visibility:
-
-    constexpr void assert_valid_input_size(std::uint64_t number) {
-        static_assert(num_digits(number) <= MAX_DIGITS, "Card number too long for digit buffer");
-    }
-
-And use it in your test file like this:
-
-    // assert_valid_input_size(41111111111111112222ULL); // Compile-time error
-
-This makes it clear why the program won’t compile, rather than just triggering an error deep inside the digit buffer logic.
-
 ---
 
 ## 📁 Project Layout
