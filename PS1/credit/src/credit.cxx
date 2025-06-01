@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <array>
+#include <cstdint>
 #include <iostream>
 #include <limits>
 #include <numeric>
@@ -21,33 +22,26 @@ enum class CardType : std::uint8_t
 };
 
 // Map card type enum to string_view (for display purposes)
-constexpr std::array<std::string_view, 4> map_card_type_as_string_view{"AMEX", "MASTERCARD", "VISA", "INVALID"};
-
-constexpr std::array<std::pair<std::uint8_t, CardType>, 4> CardPrefixes = {{
-    {34, CardType::AMEX},
-    {37, CardType::AMEX},
-    {4, CardType::VISA},
-    {5, CardType::MASTERCARD}
-}};
+constexpr std::array<std::string_view, 4> CardType_to_string_view{"AMEX", "MASTERCARD", "VISA", "INVALID"};
 
 // Convert card_type_t to std::size_t index into map array
-constexpr auto card_type_to_index = [](CardType ct) noexcept -> std::size_t {
-  return static_cast<std::size_t>(ct);
+constexpr auto CardType_to_index = [](CardType cardType) noexcept {
+  return static_cast<std::size_t>(cardType);
 };
 
 // Convert character to uint8_t (strong typing, avoids ambiguity)
-constexpr auto char_to_uint8_t = [](char c) noexcept -> std::uint8_t {
-  return static_cast<std::uint8_t>(c);
+constexpr auto char_to_uint8_t = [](char character) noexcept {
+  return static_cast<std::uint8_t>(character);
 };
 
 // Convert int to uint8_t explicitly
-constexpr auto to_uint8_t = [](int val) noexcept -> std::uint8_t {
-  return static_cast<std::uint8_t>(val);
+constexpr auto to_uint8_t = [](int value) noexcept {
+  return static_cast<std::uint8_t>(value);
 };
 
 // Validate if character is an ASCII digit
-constexpr auto is_ascii_digit = [](char c) noexcept -> bool {
-  return std::isdigit(char_to_uint8_t(c));
+constexpr auto is_ascii_digit = [](char character) noexcept {
+  return std::isdigit(char_to_uint8_t(character)) ? true : false;
 };
 
 // Convert range distance to int (e.g., for digit count)
@@ -56,14 +50,14 @@ constexpr auto distance_to_size_t = [](auto first, auto last) noexcept {
 };
 
 // Credit card constraints
-constexpr std::size_t MAX_DIGITS = 16;
-constexpr auto BASE = 10;
+constexpr auto MAX_DIGITS = std::size_t{16};
+constexpr auto BASE = std::uint8_t{10};
 
 // Compute number of decimal digits in an integer
 constexpr auto num_digits(std::uint64_t number) noexcept
 {
-  std::size_t digits = 0U;
-  while (number != 0U)
+  std::size_t digits = 0;
+  while (number != 0)
   {
     number /= BASE;
     ++digits;
@@ -75,24 +69,24 @@ constexpr auto num_digits(std::uint64_t number) noexcept
 struct DigitSequence final
 {
 private:
-  std::array<std::uint8_t, MAX_DIGITS> digits{};
-  const std::size_t count;
+  std::array<std::uint8_t, MAX_DIGITS> digits_{};
+  const std::size_t count_;
 
-  friend constexpr DigitSequence vectorise_number(std::uint64_t) noexcept;
+  friend constexpr auto vectorise_number(std::uint64_t) noexcept;
 
 public:
-  explicit constexpr DigitSequence(std::size_t c) noexcept : count{c}
+  explicit constexpr DigitSequence(std::size_t count) noexcept : count_{count}
   {
   }
 
   // Forward iterators
   constexpr auto cbegin() const noexcept
   {
-    return digits.cbegin();
+    return digits_.cbegin();
   }
   constexpr auto cend() const noexcept
   {
-    return digits.cbegin() + count;
+    return digits_.cbegin() + count_;
   }
 
   // Reverse iterators
@@ -112,28 +106,17 @@ public:
   constexpr auto rend() const noexcept = delete;
 };
 
-constexpr CardType infer_card_type(const DigitSequence& ds) noexcept
-{
-    const auto prefix = *ds.cbegin()*10 + (*(ds.cbegin()+1)); // First two digits
-    for (const auto& [prefix_str , type] : CardPrefixes) {
-        if (prefix == prefix_str) {
-            return type;
-        }
-    }
-    return CardType::INVALID;
-}
-
 // Convert a number to reversed digit_sequence
-constexpr auto vectorise_number(std::uint64_t number) noexcept -> DigitSequence
+constexpr auto vectorise_number(std::uint64_t card_number) noexcept
 {
-  const auto count = num_digits(number);
-  DigitSequence ds(count);
+  const auto count = num_digits(card_number);
+  DigitSequence digit_sequence(count);
   for (std::size_t i = 0; i < count; ++i)
   {
-    ds.digits[i] = to_uint8_t(number % BASE);
-    number /= BASE;
+    digit_sequence.digits_[i] = to_uint8_t(card_number % BASE);
+    card_number /= BASE;
   }
-  return ds;
+  return digit_sequence;
 }
 // Generate a filter predicate that returns true every Nth element (used in
 // stride logic)
@@ -145,37 +128,37 @@ constexpr auto stride(std::size_t stride_size, std::size_t offset = 0) noexcept
 }
 
 // Multiply digit by 2 (for Luhn algorithm)
-constexpr auto multiply_by_2 = [](std::uint8_t d) noexcept -> int {
+constexpr auto multiply_by_2 = [](std::uint8_t d) noexcept {
   return d * 2;
 };
 
 // Sum function for Luhn doubling rule
-constexpr auto luhn_sum = [](int acc, int val) noexcept -> int {
+constexpr auto luhn_sum = [](int acc, int val) noexcept{
   return acc + (val > 9 ? val - 9 : val); // Split digits if > 9
 };
 
 // Luhn: checksum must be divisible by 10
-constexpr auto is_valid_checksum(int sum) noexcept -> bool
+constexpr auto is_valid_checksum(int sum) noexcept
 {
   return sum % 10 == 0;
 };
 
 // Luhn: Sum digits at odd positions (not doubled)
-constexpr auto accumulate_odd_digits = [](const DigitSequence &ds) {
-  auto luhn_identity_digits = std::ranges::subrange(ds.cbegin(), ds.cend()) //
-                              | std::views::filter(stride(2, 0));
+constexpr auto accumulate_odd_digits = [](const DigitSequence &digit_sequence) {
+  auto luhn_identity_digits = std::ranges::subrange(digit_sequence.cbegin(), digit_sequence.cend()) //
+                              | std::views::filter(stride(2));
   return std::accumulate(luhn_identity_digits.begin(), luhn_identity_digits.end(), 0);
 };
 
 // Luhn: Double every second digit (even positions), then reduce
-constexpr auto accumulate_even_digits = [](const DigitSequence &ds) {
-  auto luhn_doubled_digits = std::ranges::subrange(ds.cbegin(), ds.cend()) | std::views::filter(stride(2, 1)) |
-                             std::views::transform(multiply_by_2);
+constexpr auto accumulate_even_digits = [](const DigitSequence &digit_sequence) {
+  auto luhn_doubled_digits = std::ranges::subrange(digit_sequence.cbegin(), digit_sequence.cend()) |
+                             std::views::filter(stride(2, 1)) | std::views::transform(multiply_by_2);
   return std::accumulate(luhn_doubled_digits.begin(), luhn_doubled_digits.end(), 0, luhn_sum);
 };
 
 // Main card validator
-constexpr CardType validate_card_number(std::uint64_t card_number)
+constexpr auto validate_card_number(std::uint64_t card_number)
 {
   if (card_number == 0)
     return CardType::INVALID;
@@ -193,8 +176,6 @@ constexpr CardType validate_card_number(std::uint64_t card_number)
   const auto &it = digits.crbegin();
   const auto msd = *it; // Most significant digit
   const auto second_msd = (digit_count >= 2) ? *(it + 1) : to_uint8_t(0);
-
-  [[maybe_unused]]auto test = infer_card_type(digits);
 
   // Card type inference based on prefix and length
   switch (digit_count)
@@ -219,14 +200,12 @@ constexpr CardType validate_card_number(std::uint64_t card_number)
 
   return CardType::INVALID;
 }
-
-
-
 } // namespace credit
+
 int main()
 {
   std::uint64_t card_number = 0;
-  constexpr std::size_t max_input_digits = static_cast<std::size_t>(credit::MAX_DIGITS);
+  constexpr std::size_t MAX_INPUT_DIGITS = static_cast<std::size_t>(credit::MAX_DIGITS);
 
   while (true)
   {
@@ -247,9 +226,9 @@ int main()
       continue;
     }
 
-    if (input.size() > max_input_digits)
+    if (input.size() > MAX_INPUT_DIGITS)
     {
-      std::println("Invalid input. Maximum supported length is {} digits.", max_input_digits);
+      std::println("Invalid input. Maximum supported length is {} digits.", MAX_INPUT_DIGITS);
       continue;
     }
 
@@ -266,7 +245,7 @@ int main()
     break;
   }
 
-  const auto type = credit::validate_card_number(card_number);
-  std::println("{}", credit::map_card_type_as_string_view[credit::card_type_to_index(type)]);
+  dconst auto type = credit::validate_card_number(card_number);
+  std::println("{}", credit::CardType_to_string_view[credit::CardType_to_index(type)]);
   return 0;
 }
