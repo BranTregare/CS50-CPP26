@@ -106,7 +106,7 @@ public:
 };
 
 // Convert a number to reversed digit_sequence
-constexpr auto vectorise_number(std::uint64_t card_number) noexcept
+[[nodiscard]]constexpr auto vectorise_number(std::uint64_t card_number) noexcept
 {
   const auto count = num_digits(card_number);
   DigitSequence digit_sequence(count);
@@ -119,7 +119,7 @@ constexpr auto vectorise_number(std::uint64_t card_number) noexcept
 }
 // Generate a filter predicate that returns true every Nth element (used in
 // stride logic)
-constexpr auto stride(std::size_t stride_size, std::size_t offset = 0) noexcept
+[[nodiscard]]constexpr auto stride(std::size_t stride_size, std::size_t offset = 0) noexcept
 {
   return [stride_size, offset, count = std::numeric_limits<std::size_t>::max()](auto) mutable noexcept {
     return (++count % stride_size) == offset;
@@ -137,7 +137,7 @@ constexpr auto luhn_sum = [](int acc, int val) noexcept{
 };
 
 // Luhn: checksum must be divisible by 10
-constexpr auto is_valid_checksum(int checksum) noexcept
+[[nodiscard]]constexpr auto is_valid_checksum(int checksum) noexcept
 {
   return checksum % 10 == 0;
 };
@@ -157,7 +157,7 @@ constexpr auto accumulate_even_digits = [](const DigitSequence &digit_sequence) 
 };
 
 // Main card validator
-constexpr auto validate_card_number(std::uint64_t card_number)
+[[nodiscard]]constexpr auto validate_card_number(std::uint64_t card_number)
 {
   if (card_number == 0)
     return CardType::INVALID;
