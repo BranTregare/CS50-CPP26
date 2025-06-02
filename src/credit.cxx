@@ -11,7 +11,6 @@
 
 namespace credit
 {
-
 // Strongly typed enumeration for card types
 enum class CardType : std::uint8_t
 {
@@ -80,30 +79,30 @@ public:
   }
 
   // Forward iterators
-  constexpr auto cbegin() const noexcept
+  [[nodiscard]] constexpr auto cbegin() const noexcept
   {
     return digits_.cbegin();
   }
-  constexpr auto cend() const noexcept
+  [[nodiscard]] constexpr auto cend() const noexcept
   {
     return digits_.cbegin() + count_;
   }
 
   // Reverse iterators
-  constexpr auto crbegin() const noexcept
+  [[nodiscard]] constexpr auto crbegin() const noexcept
   {
     return std::reverse_iterator(cend());
   }
-  constexpr auto crend() const noexcept
+  [[nodiscard]] constexpr auto crend() const noexcept
   {
     return std::reverse_iterator(cbegin());
   }
 
   // Prevent accidental mutation or raw access
-  constexpr auto begin() const noexcept = delete;
-  constexpr auto end() const noexcept = delete;
-  constexpr auto rbegin() const noexcept = delete;
-  constexpr auto rend() const noexcept = delete;
+  [[nodiscard]] constexpr auto begin() const noexcept = delete;
+  [[nodiscard]] constexpr auto end() const noexcept = delete;
+  [[nodiscard]] constexpr auto rbegin() const noexcept = delete;
+  [[nodiscard]] constexpr auto rend() const noexcept = delete;
 };
 
 // Convert a number to reversed digit_sequence
@@ -128,8 +127,8 @@ constexpr auto stride(std::size_t stride_size, std::size_t offset = 0) noexcept
 }
 
 // Multiply digit by 2 (for Luhn algorithm)
-constexpr auto multiply_by_2 = [](std::uint8_t d) noexcept {
-  return d * 2;
+constexpr auto multiply_by_2 = [](std::uint8_t digit) noexcept {
+  return digit * 2;
 };
 
 // Sum function for Luhn doubling rule
@@ -138,9 +137,9 @@ constexpr auto luhn_sum = [](int acc, int val) noexcept{
 };
 
 // Luhn: checksum must be divisible by 10
-constexpr auto is_valid_checksum(int sum) noexcept
+constexpr auto is_valid_checksum(int checksum) noexcept
 {
-  return sum % 10 == 0;
+  return checksum % 10 == 0;
 };
 
 // Luhn: Sum digits at odd positions (not doubled)
@@ -175,7 +174,7 @@ constexpr auto validate_card_number(std::uint64_t card_number)
 
   const auto &it = digits.crbegin();
   const auto msd = *it; // Most significant digit
-  const auto second_msd = (digit_count >= 2) ? *(it + 1) : to_uint8_t(0);
+  const auto second_msd = *(it + 1); // Second most significant digit
 
   // Card type inference based on prefix and length
   switch (digit_count)
@@ -205,7 +204,7 @@ constexpr auto validate_card_number(std::uint64_t card_number)
 int main()
 {
   std::uint64_t card_number = 0;
-  constexpr std::size_t MAX_INPUT_DIGITS = static_cast<std::size_t>(credit::MAX_DIGITS);
+  constexpr auto MAX_INPUT_DIGITS = static_cast<std::size_t>(credit::MAX_DIGITS);
 
   while (true)
   {
