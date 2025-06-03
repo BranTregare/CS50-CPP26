@@ -48,7 +48,5 @@ target_include_directories(credit_runtime_test PRIVATE
   ${INCLUDE_DIR}
   ${TEST_INCLUDE_DIR}
 )
-
-include(CTest)
 include(Catch)
 catch_discover_tests(credit_runtime_test)
