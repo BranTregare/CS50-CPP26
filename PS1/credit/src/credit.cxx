@@ -29,17 +29,17 @@ constexpr auto CardType_to_index = [](CardType cardType) noexcept {
 };
 
 // Convert character to uint8_t (strong typing, avoids ambiguity)
-constexpr auto char_to_uint8_t = [](char character) noexcept {
+constexpr auto char_to_uint8_t = [](const char character) noexcept {
   return static_cast<std::uint8_t>(character);
 };
 
 // Convert int to uint8_t explicitly
-constexpr auto to_uint8_t = [](int value) noexcept {
+constexpr auto to_uint8_t = [](const int value) noexcept {
   return static_cast<std::uint8_t>(value);
 };
 
 // Validate if character is an ASCII digit
-constexpr auto is_ascii_digit = [](char character) noexcept {
+constexpr auto is_ascii_digit = [](const char character) noexcept {
   return std::isdigit(char_to_uint8_t(character)) ? true : false;
 };
 
@@ -74,7 +74,7 @@ private:
   friend constexpr auto vectorise_number(std::uint64_t) noexcept;
 
 public:
-  explicit constexpr DigitSequence(std::size_t count) noexcept : count_{count}
+  explicit constexpr DigitSequence(const std::size_t count) noexcept : count_{count}
   {
   }
 
@@ -117,30 +117,29 @@ public:
   }
   return digit_sequence;
 }
-// Generate a filter predicate that returns true every Nth element (used in
-// stride logic)
-[[nodiscard]]constexpr auto stride(std::size_t stride_size, std::size_t offset = 0) noexcept
-{
+
+// Returns a stateful predicate that selects every Nth element starting at a given offset.
+constexpr auto stride = [](std::size_t stride_size, std::size_t offset = 0) noexcept {
   return [stride_size, offset, count = std::numeric_limits<std::size_t>::max()](auto) mutable noexcept {
     return (++count % stride_size) == offset;
   };
-}
+};
 
 // Multiply digit by 2 (for Luhn algorithm)
-constexpr auto multiply_by_2 = [](std::uint8_t digit) noexcept {
+constexpr auto multiply_by_2 = [](const std::uint8_t digit) noexcept {
   return digit * 2;
 };
 
 // Sum function for Luhn doubling rule
-constexpr auto luhn_sum = [](int acc, int val) noexcept{
+constexpr auto luhn_sum = [](const int acc, const int val) noexcept{
   return acc + (val > 9 ? val - 9 : val); // Split digits if > 9
 };
 
 // Luhn: checksum must be divisible by 10
-[[nodiscard]]constexpr auto is_valid_checksum(int checksum) noexcept
+[[nodiscard]]constexpr auto is_valid_checksum(const int checksum) noexcept
 {
   return checksum % 10 == 0;
-};
+}
 
 // Luhn: Sum digits at odd positions (not doubled)
 constexpr auto accumulate_odd_digits = [](const DigitSequence &digit_sequence) {
@@ -157,7 +156,7 @@ constexpr auto accumulate_even_digits = [](const DigitSequence &digit_sequence) 
 };
 
 // Main card validator
-[[nodiscard]]constexpr auto validate_card_number(std::uint64_t card_number)
+[[nodiscard]]constexpr auto validate_card_number(const std::uint64_t card_number)
 {
   if (card_number == 0)
     return CardType::INVALID;
@@ -168,8 +167,7 @@ constexpr auto accumulate_even_digits = [](const DigitSequence &digit_sequence) 
   if (digit_count < 13 || digit_count > 16)
     return CardType::INVALID;
 
-  const int checksum = accumulate_odd_digits(digits) + accumulate_even_digits(digits);
-  if (!is_valid_checksum(checksum))
+  if (const int checksum = accumulate_odd_digits(digits) + accumulate_even_digits(digits); !is_valid_checksum(checksum))
     return CardType::INVALID;
 
   const auto &it = digits.crbegin();
@@ -190,7 +188,7 @@ constexpr auto accumulate_even_digits = [](const DigitSequence &digit_sequence) 
   case 16:
     if (msd == 4)
       return CardType::VISA;
-    if (msd == 5 && (second_msd >= 1 && second_msd <= 5))
+    if (msd == 5 && second_msd >= 1 && second_msd <= 5)
       return CardType::MASTERCARD;
     break;
   default:
@@ -217,9 +215,8 @@ int main()
     }
 
     // Check for digit-only input
-    const bool all_digits = std::ranges::all_of(input, credit::is_ascii_digit);
 
-    if (!all_digits)
+    if (const bool all_digits = std::ranges::all_of(input, credit::is_ascii_digit); !all_digits)
     {
       std::println("Invalid input. Please enter digits only (no letters or symbols).");
       continue;
