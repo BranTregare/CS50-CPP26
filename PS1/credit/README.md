@@ -8,7 +8,7 @@ This is a modern C++26 implementation of the **CS50 Problem Set 1: Credit** prob
 
 ## ✨ Purpose
 
-This project is a **didactic and demonstrator implementation**, intended to:
+This project is a **didactic and a demonstrator implementation**, intended to:
 
 - Showcase how to implement classic CS50 problems in **modern idiomatic C++ (C++26)**.
 - Teach **safe input handling**, **compile-time validation**, and **clean modular design**.
@@ -24,7 +24,7 @@ This project is a **didactic and demonstrator implementation**, intended to:
 |--------------------------|------------------------------------|------------------------------------------|
 | Input Handling           | `get_long_long()` (black box)      | `std::getline` + manual validation       |
 | Luhn Implementation      | Manual loops                       | Ranges, views, transforms                |
-| Digit Access             | Division-based                     | `digit_sequence` (reversed for clarity)  |
+| Digit Access             | Division-based                     | `DigitSequence` (reversed for clarity)   |
 | Type Safety              | Raw `long long`, `int`             | `std::uint64_t`, `std::uint8_t`, enums   |
 | Card Type Output         | `printf` string                    | `enum class` + `std::println`            |
 | Static Validation        | N/A                                | `constexpr`, `static_assert`             |
