@@ -24,8 +24,8 @@ enum class CardType : std::uint8_t
 constexpr std::array<std::string_view, 4> CardType_to_string_view{"AMEX", "MASTERCARD", "VISA", "INVALID"};
 
 // Convert card_type_t to std::size_t index into map array
-constexpr auto CardType_to_index = [](CardType cardType) noexcept {
-  return static_cast<std::size_t>(cardType);
+constexpr auto CardType_to_index = [](CardType card_type) noexcept {
+  return static_cast<std::size_t>(card_type);
 };
 
 // Convert character to uint8_t (strong typing, avoids ambiguity)
