@@ -1,38 +1,39 @@
-# Teaching Notes – Instructor Edition
+# Teaching Notes – Student Edition 
 
-This is a modern C++26 reimplementation of the CS50 “Credit” problem.
+This project is a modern C++26 reimagining of the classic CS50 "Credit" problem.
 
-It serves as a demonstration of **design-minded programming**, even in a beginner-friendly exercise. The intent is not to "optimize" or "complicate" — but to teach **clarity, modularity, safety, and testability** using modern C++ idioms.
+You already know the original version — it asks you to validate a credit card number using the Luhn algorithm and identify its type (AMEX, MASTERCARD, or VISA).
+
+Now you're doing the same thing using **modern C++ features** like `constexpr`, ranges, and strong typing — not to overcomplicate the problem, but to **explore good design in a familiar space**.
 
 ---
 
-## 🎯 Teaching Goals
+## 🧠 Goals
 
-- Make strong C++ habits visible and teachable in a small codebase
-- Highlight benefits of compile-time checks, modularity, and clean input handling
-- Reinforce that **good code structure** matters even for "trivial" problems
+- Show that **even small programs deserve good engineering**
+- Introduce students to **safe, modular, and modern C++**
+- Encourage curiosity and experimentation with modern tools
 
 ---
 
 ## ✅ What This Project Demonstrates
 
-- **Safe-by-construction design** using strong types and `constexpr`
-- Input validation without opaque functions (replaces `get_long_long()`)
-- Reverse-iteration Luhn logic using ranges/views for clarity
-- Unit testing that scales: static tests + Catch2 runtime coverage
-- That compile-time errors can be a **feature**, not a failure
+- That C++ can be **expressive and safe**, even in small beginner-friendly domains
+- That **compile-time programming** can enforce correctness and constraints
+- That testing, modularity, and **type safety** scale even to small exercises
+- That writing clear, modern C++ code doesn’t require a large or complex problem
 
 ---
 
 ## 🛑 What This Project Avoids
 
-- No fragile or incomplete C++ module support — not yet ready for students
-- No CI/CD — outside scope for most CS50 learners
-- No reliance on undefined behavior or implementation quirks
+- No CI, no build complexity — keep it approachable
+- No C++ modules (not yet fully supported in compilers)
+- No real-world card validation (this is **didactic**, not secure)
 
 ---
 
-## 📊 Comparison with CS50’s Original C Version
+## 🔍 CS50 C Version vs. This Modern C++26 Version
 
 | Feature              | CS50 (C Version)          | This Project (Modern C++26)               |
 |----------------------|---------------------------|-------------------------------------------|
@@ -46,15 +47,13 @@ It serves as a demonstration of **design-minded programming**, even in a beginne
 
 ---
 
-## 🧪 Suggestions for Student Exploration
+## ✨ Tips for Exploring
 
-- Break the `validate_card_number()` logic — and explain the result
-- Extend the enum to support Discover or other prefixes
-- Discuss why reversed digit order simplifies Luhn's rule
-- Encourage students to run timing benchmarks with the `StopWatch` class — even if results aren’t meaningful yet
+- Try changing the validation logic — what fails?
+- Add support for Discover or other card types
+- Uncomment static tests in `credit_test.cxx` and watch what the compiler does
+- Experiment with the `stopwatch.hxx` utility — it’s safe to ignore or explore!
 
----
+You're not just solving a problem — you're learning to design, validate, and express intent clearly. That’s the heart of modern C++.
 
-By inviting students to **explore design and safety**, we help them level up — not by complexity, but by clarity.
-
-Small problem. Big opportunity.
+Enjoy the journey!
