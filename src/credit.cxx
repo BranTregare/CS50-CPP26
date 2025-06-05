@@ -106,7 +106,7 @@ public:
 };
 
 // Convert a number to reversed digit_sequence
-[[nodiscard]]constexpr auto vectorise_number(std::uint64_t card_number) noexcept
+[[nodiscard]] constexpr auto vectorise_number(std::uint64_t card_number) noexcept
 {
   const auto count = num_digits(card_number);
   DigitSequence digit_sequence(count);
@@ -131,12 +131,12 @@ constexpr auto multiply_by_2 = [](const std::uint8_t digit) noexcept {
 };
 
 // Sum function for Luhn doubling rule
-constexpr auto luhn_sum = [](const int acc, const int val) noexcept{
+constexpr auto luhn_sum = [](const int acc, const int val) noexcept {
   return acc + (val > 9 ? val - 9 : val); // Split digits if > 9
 };
 
 // Luhn: checksum must be divisible by 10
-[[nodiscard]]constexpr auto is_valid_checksum(const int checksum) noexcept
+[[nodiscard]] constexpr auto is_valid_checksum(const int checksum) noexcept
 {
   return checksum % 10 == 0;
 }
@@ -156,7 +156,7 @@ constexpr auto accumulate_even_digits = [](const DigitSequence &digit_sequence) 
 };
 
 // Main card validator
-[[nodiscard]]constexpr auto validate_card_number(const std::uint64_t card_number)
+[[nodiscard]] constexpr auto validate_card_number(const std::uint64_t card_number)
 {
   if (card_number == 0)
     return CardType::INVALID;
@@ -171,7 +171,7 @@ constexpr auto accumulate_even_digits = [](const DigitSequence &digit_sequence) 
     return CardType::INVALID;
 
   const auto &it = digits.crbegin();
-  const auto msd = *it; // Most significant digit
+  const auto msd = *it;              // Most significant digit
   const auto second_msd = *(it + 1); // Second most significant digit
 
   // Card type inference based on prefix and length
@@ -199,6 +199,15 @@ constexpr auto accumulate_even_digits = [](const DigitSequence &digit_sequence) 
 }
 } // namespace credit
 
+#if defined(CREDIT_NO_MAIN)
+
+int main()
+{
+  return 0;
+}
+
+#else
+
 int main()
 {
   std::uint64_t card_number = 0;
@@ -208,10 +217,21 @@ int main()
   {
     std::print("Number: ");
     std::string input;
+
     if (!std::getline(std::cin, input))
     {
-      std::println("Input error.");
-      return 1;
+      if (std::cin.eof())
+      {
+        std::println("EOF detected aborting");
+        return 1;
+      }
+      else
+      {
+        std::println("Input error.");
+        std::cin.clear();
+        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+        continue;
+      }
     }
 
     // Check for digit-only input
@@ -245,3 +265,4 @@ int main()
   std::println("{}", credit::CardType_to_string_view[credit::CardType_to_index(type)]);
   return 0;
 }
+#endif // CREDIT_NO_MAIN

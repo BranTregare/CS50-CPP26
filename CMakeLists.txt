@@ -25,6 +25,7 @@ target_link_libraries(credit PRIVATE stopwatch)
 
 # === Static Assert Test Target ===
 add_executable(credit_test ${TEST_DIR}/credit_test.cxx)
+target_compile_definitions(credit_test PRIVATE CREDIT_NO_MAIN)
 target_compile_options(credit_test PRIVATE -Wall -Wextra -Wpedantic -Werror)
 target_include_directories(credit_test PRIVATE
   ${INCLUDE_DIR}
@@ -48,5 +49,6 @@ target_include_directories(credit_runtime_test PRIVATE
   ${INCLUDE_DIR}
   ${TEST_INCLUDE_DIR}
 )
+target_compile_definitions(credit_runtime_test PRIVATE CREDIT_NO_MAIN)
 include(Catch)
 catch_discover_tests(credit_runtime_test)
