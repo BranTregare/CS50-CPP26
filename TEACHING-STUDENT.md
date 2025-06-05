@@ -51,4 +51,9 @@ Now you're doing the same thing using **modern C++ features** like `constexpr`, 
 
 - Try changing the validation logic — what fails?
 - Add support for Discover or other card types
-- Uncomment static tests in `credit_test.cxx` and watch what the_
+- Uncomment static tests in `credit_test.cxx` and watch what the compiler does
+- Experiment with the `stopwatch.hxx` utility — it’s safe to ignore or explore!
+
+You're not just solving a problem — you're learning to design, validate, and express intent clearly. That’s the heart of modern C++.
+
+Enjoy the journey!
