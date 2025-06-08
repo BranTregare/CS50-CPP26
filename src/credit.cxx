@@ -38,12 +38,13 @@ constexpr auto to_uint8_t = [](const int value) noexcept {
   return static_cast<std::uint8_t>(value);
 };
 
-// Validate if character is an ASCII digit
+// Explicitly convert char to uint8_t before calling std::isdigit
+// to avoid implicit conversions and highlight strong typing.
 constexpr auto is_ascii_digit = [](const char character) noexcept {
   return std::isdigit(char_to_uint8_t(character)) ? true : false;
 };
 
-// Convert range distance to int (e.g., for digit count)
+// Convert range distance to std::size_t (e.g., for digit count)
 constexpr auto distance_to_size_t = [](auto first, auto last) noexcept {
   return static_cast<std::size_t>(std::ranges::distance(first, last));
 };
@@ -119,24 +120,34 @@ public:
 }
 
 // Returns a stateful predicate that selects every Nth element starting at a given offset.
-constexpr auto stride = [](std::size_t stride_size, std::size_t offset = 0) noexcept {
-  return [stride_size, offset, count = std::numeric_limits<std::size_t>::max()](auto) mutable noexcept {
-    return (++count % stride_size) == offset;
+// It tests the current count before incrementing, so counting starts at zero.
+// Using pre-increment (++count) after the test for efficiency and correctness.
+constexpr auto stride(std::size_t stride_size, std::size_t offset = 0) noexcept {
+  return [stride_size, offset, count = std::size_t{0}](auto) mutable noexcept {
+    bool result = (count % stride_size) == offset;  // Check if current element matches stride position
+    ++count;  // Increment count after the check (pre-increment style)
+    return result;
   };
-};
+}
 
 // Multiply digit by 2 (for Luhn algorithm)
-constexpr auto multiply_by_2 = [](const std::uint8_t digit) noexcept {
-  return digit * 2;
+// Strongly typed doubling: preserves uint8_t type for clarity and safety
+// Avoids implicit promotion to int; keeps result in uint8_t domain
+constexpr auto multiply_by_2 = [](const std::uint8_t digit) noexcept{
+  const std::uint8_t result = digit * 2;
+  return result;
 };
 
 // Sum function for Luhn doubling rule
-constexpr auto luhn_sum = [](const int acc, const int val) noexcept {
-  return acc + (val > 9 ? val - 9 : val); // Split digits if > 9
+// Strongly typed sum: ensures result remains within uint16_t domain
+// Avoids implicit promotion to int; keeps result in uint16_t domain
+constexpr auto luhn_sum = [](std::uint16_t acc, std::uint8_t val) noexcept {
+  const std::uint16_t result = acc + (val > 9 ? val - 9 : val);
+  return result;
 };
 
 // Luhn: checksum must be divisible by 10
-[[nodiscard]] constexpr auto is_valid_checksum(const int checksum) noexcept
+[[nodiscard]] constexpr auto is_valid_checksum(const uint16_t checksum) noexcept
 {
   return checksum % 10 == 0;
 }
@@ -145,14 +156,16 @@ constexpr auto luhn_sum = [](const int acc, const int val) noexcept {
 constexpr auto accumulate_odd_digits = [](const DigitSequence &digit_sequence) {
   auto luhn_identity_digits = std::ranges::subrange(digit_sequence.cbegin(), digit_sequence.cend()) //
                               | std::views::filter(stride(2));
-  return std::accumulate(luhn_identity_digits.begin(), luhn_identity_digits.end(), 0);
+  const std::uint16_t result = std::accumulate(luhn_identity_digits.begin(), luhn_identity_digits.end(),std::uint16_t{0});
+  return result;
 };
 
 // Luhn: Double every second digit (even positions), then reduce
 constexpr auto accumulate_even_digits = [](const DigitSequence &digit_sequence) {
   auto luhn_doubled_digits = std::ranges::subrange(digit_sequence.cbegin(), digit_sequence.cend()) |
                              std::views::filter(stride(2, 1)) | std::views::transform(multiply_by_2);
-  return std::accumulate(luhn_doubled_digits.begin(), luhn_doubled_digits.end(), 0, luhn_sum);
+  const std::uint16_t result = std::accumulate(luhn_doubled_digits.begin(), luhn_doubled_digits.end(), std::uint16_t{0}, luhn_sum);
+  return result;
 };
 
 // Main card validator
@@ -167,7 +180,8 @@ constexpr auto accumulate_even_digits = [](const DigitSequence &digit_sequence) 
   if (digit_count < 13 || digit_count > 16)
     return CardType::INVALID;
 
-  if (const int checksum = accumulate_odd_digits(digits) + accumulate_even_digits(digits); !is_valid_checksum(checksum))
+  // Explicitly using uint16_t to prevent implicit promotion to int (C++ usual arithmetic conversions)
+  if (const std::uint16_t checksum = accumulate_odd_digits(digits) + accumulate_even_digits(digits); !is_valid_checksum(checksum))
     return CardType::INVALID;
 
   const auto &it = digits.crbegin();
