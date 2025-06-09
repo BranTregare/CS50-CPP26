@@ -28,5 +28,8 @@ What assumptions about input structure are safe to encode at compile time?
 
 > 📎 See the top-level [`PHILOSOPHY.md`](../../../PHILOSOPHY.md) for project-wide design values and the origin of this project’s engineering mindset. It includes a reflection on optimization, performance, and clarity — especially:
 >
-> “In 1994, we optimized because we were desperate.  
-> Today, we should optimize because it’s right.”
+> “In 1994, we optimized because we were desperate,  
+> our compilers weren’t up to it,  
+> and it was the right thing to do.  
+>
+> Today, we should optimize because it is right.”
