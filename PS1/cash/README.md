@@ -46,4 +46,4 @@ cmake --build build
 
 Unlike the original CS50 `cash.c`, this implementation is not limited to coins, nor is it hardcoded to a single currency. It emphasizes correctness, clarity, and extensibility — without sacrificing simplicity.
 
-See [`PHILOSOPHY.md`](../../../PHILOSOPHY.md) for more on the values behind this project.
+See [`PHILOSOPHY.md`](./PHILOSOPHY.md) for more on the values behind this project.
