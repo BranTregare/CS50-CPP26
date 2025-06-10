@@ -5,6 +5,7 @@
 /Makefile
 /cmake_install.cmake
 /install_manifest.txt
+.cache/
 
 # === Ninja ===
 /build.ninja
@@ -29,7 +30,6 @@
 
 # === IDEs and Editor Files ===
 .vscode/
-.vscodium/
 /.idea/
 *.sublime-workspace
 *.sublime-project
@@ -80,4 +80,3 @@ vgcore.*
 *.core
 *.stackdump
 *.orig
-**/.cache/

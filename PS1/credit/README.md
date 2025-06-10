@@ -8,13 +8,34 @@ This is a modern C++26 implementation of the **CS50 Problem Set 1: Credit** prob
 
 ## ✨ Purpose
 
-This project is a **didactic and a demonstrator implementation**, intended to:
+This project is a **didactic and demonstrator implementation**, intended to:
 
 - Showcase how to implement classic CS50 problems in **modern idiomatic C++ (C++26)**.
 - Teach **safe input handling**, **compile-time validation**, and **clean modular design**.
 - Replace opaque library functions like `get_long_long()` with **transparent, real-world alternatives**.
 - Demonstrate **`constexpr`-based logic**, **ranges/views**, and **strong typing**.
 - Encourage understanding of the **Luhn algorithm** by reversing the digit sequence for clarity.
+
+---
+
+## 📁 Project Layout
+
+```
+credit/
+├── CMakeLists.txt
+├── src/
+│   ├── credit.cxx              # Main implementation
+│   └── include/
+│       └── stopwatch.hxx       # Lightweight stopwatch (not used — explore it!)
+├── test/
+│   ├── credit_test.cxx         # Compile-time static_assert tests (no Catch2)
+│   ├── credit_runtime_test.cxx # Catch2 runtime unit tests
+│   └── include/
+│       └── test_util.hxx       # Shared test helpers
+```
+
+> 📌 The included `stopwatch.hxx` is a minimal high-resolution timer utility.  
+> It is **not used** in the code, by design — curious students are encouraged to explore and integrate it.
 
 ---
 
@@ -52,13 +73,17 @@ Example: Overlong Input (Compile-Time Error)
 
 This test is intentionally commented out in `credit_test.cxx`:
 
-    // static_assert(test_validate(41111111111111112222ULL) == CardType::INVALID, "Too long");
+```cpp
+// static_assert(test_validate(41111111111111112222ULL) == CardType::INVALID, "Too long");
+```
 
 Why Does This Fail?
 
 Internally, credit card digits are stored in a fixed-size buffer:
 
-    std::array<std::uint8_t, 16> digits_;
+```cpp
+std::array<std::uint8_t, 16> digits_;
+```
 
 When `vectorise_number()` is called on a number with more than 16 digits, it attempts to write past the end of this buffer. Because the logic is marked `constexpr`, this triggers a compile-time failure.
 
@@ -67,21 +92,6 @@ What’s the Benefit?
 - No runtime length checks are needed inside the Luhn logic.
 - The compiler enforces structural constraints before the program is built.
 - It demonstrates a fail-fast and safe-by-construction design.
----
-
-## 📁 Project Layout
-
-    credit/
-    ├── CMakeLists.txt
-    ├── src/
-    │   ├── credit.cxx              # Main implementation
-    │   └── include/
-    │       └── stopwatch.hxx       # Lightweight stopwatch (optional utility)
-    ├── test/
-    │   ├── credit_test.cxx         # Compile-time static_assert tests
-    │   ├── credit_runtime_test.cxx # Catch2 runtime unit tests
-    │   └── include/
-    │       └── test_util.hxx       # Shared test helpers
 
 ---
 
@@ -90,13 +100,38 @@ What’s the Benefit?
 **Requirements:**
 
 - `clang++` 20.1.6+
+- `libc++` 20.1.6+
 - `cmake` 3.31.6+
-- `ninja` (multi-target)
+- `ninja` (multi-config capable)
 
-**Build and test:**
+### Build and Run (Debug by Default)
 
 ```bash
-mkdir build && cd build
-cmake -G Ninja ..
-ninja
-ctest --verbose
+cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug
+cmake --build build --config Debug
+ctest --test-dir build --build-config Debug --verbose
+```
+
+> 🐛 `Debug` is the default build type, with full symbols and zero optimization.
+>
+> 🚀 A `Release` build is available and enabled:
+>
+> ```bash
+> cmake --build build --config Release
+> ctest --test-dir build --build-config Release --verbose
+> ```
+
+---
+
+## 🧭 Things to Explore
+
+If you're new to modern C++, this project contains ideas and tools worth exploring further:
+
+- `std::string_view` — for safe, efficient string slicing
+- `std::ranges::views` — declarative data transformations
+- `constexpr` logic and `static_assert` — compile-time correctness
+- Minimal `enum class`-based API design
+- CMake multi-config with Ninja (Debug vs Release)
+- Adding `stopwatch.hxx` to measure runtime performance
+
+---

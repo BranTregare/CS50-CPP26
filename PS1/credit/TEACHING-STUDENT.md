@@ -1,4 +1,4 @@
-# Teaching Notes – Student Edition 
+# Teaching Notes – Student Edition
 
 This project is a modern C++26 reimagining of the classic CS50 "Credit" problem.
 
