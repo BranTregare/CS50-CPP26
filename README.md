@@ -1,137 +1,119 @@
-# Credit Card Validator – CS50 Problem Set 1 (Modern C++26 Edition)
+# PS1: Credit — Card Validator
 
-> Part of the [`CS50-CPP26`](https://github.com/BranTregare/CS50-CPP26) repository.
-
-This is a modern C++26 implementation of the **CS50 Problem Set 1: Credit** problem. It validates credit card numbers using the Luhn algorithm and identifies card types (AMEX, MASTERCARD, VISA).
-
----
-
-## ✨ Purpose
-
-This project is a **didactic and demonstrator implementation**, intended to:
-
-- Showcase how to implement classic CS50 problems in **modern idiomatic C++ (C++26)**.
-- Teach **safe input handling**, **compile-time validation**, and **clean modular design**.
-- Replace opaque library functions like `get_long_long()` with **transparent, real-world alternatives**.
-- Demonstrate **`constexpr`-based logic**, **ranges/views**, and **strong typing**.
-- Encourage understanding of the **Luhn algorithm** by reversing the digit sequence for clarity.
+This project reimagines the CS50 `credit.c` problem using modern **C++26**, compiled with **Clang++ 20.1.6** and **libc++**.  
+It validates credit card numbers using the **Luhn algorithm** and determines the card type (AMEX, MASTERCARD, VISA).
 
 ---
 
-## 📁 Project Layout
+## 💡 Problem Statement
+
+Given a credit card number, determine its validity and identify its issuer using a checksum algorithm (Luhn).  
+If the number is invalid, output `INVALID`. Otherwise, return the card type.
+
+---
+
+## ✨ Key Features
+
+- Uses `std::array`, `std::ranges`, and `constexpr` for type safety and clarity
+- Validates input structure and performs checksum at compile time where possible
+- Separates parsing, validation, and reporting logic into clear abstractions
+- Includes static and runtime tests (via `static_assert` and Catch2)
+- Clean, modular structure and header-only utilities
+
+**Sample Output:**
+```text
+Number: 378282246310005
+AMEX
+```
+
+---
+
+## 🔍 What’s Different?
+
+| Aspect              | Traditional CS50 `credit.c`         | This C++26 Version                          |
+|---------------------|-------------------------------------|---------------------------------------------|
+| Input handling      | `get_long()`                        | `std::string_view` + `constexpr` parsing    |
+| Validation          | Loops and branching                 | `std::ranges`, `constexpr`, `enum class`    |
+| Card type checking  | Manual branching                    | Pattern-matched via `constexpr` logic       |
+| Memory usage        | Implicit                            | Stack-only, no dynamic allocation           |
+| Error checking      | Implicit, runtime only              | Compile-time where possible (`static_assert`) |
+
+---
+
+## 📁 Layout
 
 ```
-credit/
-├── CMakeLists.txt
+PS1/credit/
+├── CMakeLists.txt              # Build configuration
+├── README.md                   # This file
+├── PHILOSOPHY.md               # Design goals and rationale
+├── TEACHING-INSTRUCTOR.md      # Instructor guidance
+├── TEACHING-STUDENT.md         # Exploration hints for students
 ├── src/
 │   ├── credit.cxx              # Main implementation
 │   └── include/
-│       └── stopwatch.hxx       # Lightweight stopwatch (not used — explore it!)
-├── test/
-│   ├── credit_test.cxx         # Compile-time static_assert tests (no Catch2)
-│   ├── credit_runtime_test.cxx # Catch2 runtime unit tests
-│   └── include/
-│       └── test_util.hxx       # Shared test helpers
+│       └── stopwatch.hxx       # Stopwatch utility (optional)
+└── test/
+    ├── credit_test.cxx         # Compile-time tests (static_assert)
+    ├── credit_runtime_test.cxx # Catch2 runtime unit tests
+    └── include/
+        └── test_util.hxx       # Shared test helpers
 ```
-
-> 📌 The included `stopwatch.hxx` is a minimal high-resolution timer utility.  
-> It is **not used** in the code, by design — curious students are encouraged to explore and integrate it.
-
----
-
-## 🔍 What’s Different from CS50’s C Version?
-
-| Feature                  | CS50 (C)                           | This Project (C++26)                     |
-|--------------------------|------------------------------------|------------------------------------------|
-| Input Handling           | `get_long_long()` (black box)      | `std::getline` + manual validation       |
-| Luhn Implementation      | Manual loops                       | Ranges, views, transforms                |
-| Digit Access             | Division-based                     | `DigitSequence` (reversed for clarity)   |
-| Type Safety              | Raw `long long`, `int`             | `std::uint64_t`, `std::uint8_t`, enums   |
-| Card Type Output         | `printf` string                    | `enum class` + `std::println`            |
-| Static Validation        | N/A                                | `constexpr`, `static_assert`             |
-| Unit Testing             | Manual                             | Compile-time & Catch2 runtime tests      |
-
----
-
-## ⚠️ Disclaimer
-
-This code is provided for **educational and demonstrative purposes only**.  
-It is **not production-ready** and is shared *as-is*, **without warranty or guarantee**.
-
----
-
-## 🧪 Testing
-
-- **Compile-time:** Includes `static_assert` tests in `credit_test.cxx` to validate logic at build time.
-- **Runtime:** Uses [Catch2 v3](https://github.com/catchorg/Catch2) for unit tests in `credit_runtime_test.cxx`.
-
-### Compile-Time Failure as a Feature
-
-In this project, some invalid credit card inputs — such as numbers with more than 16 digits — are caught **at compile time**, not at runtime.
-
-Example: Overlong Input (Compile-Time Error)
-
-This test is intentionally commented out in `credit_test.cxx`:
-
-```cpp
-// static_assert(test_validate(41111111111111112222ULL) == CardType::INVALID, "Too long");
-```
-
-Why Does This Fail?
-
-Internally, credit card digits are stored in a fixed-size buffer:
-
-```cpp
-std::array<std::uint8_t, 16> digits_;
-```
-
-When `vectorise_number()` is called on a number with more than 16 digits, it attempts to write past the end of this buffer. Because the logic is marked `constexpr`, this triggers a compile-time failure.
-
-What’s the Benefit?
-
-- No runtime length checks are needed inside the Luhn logic.
-- The compiler enforces structural constraints before the program is built.
-- It demonstrates a fail-fast and safe-by-construction design.
 
 ---
 
 ## ⚙️ Build Instructions
 
-**Requirements:**
-
-- `clang++` 20.1.6+
-- `libc++` 20.1.6+
-- `cmake` 3.31.6+
-- `ninja` (multi-config capable)
-
-### Build and Run (Debug by Default)
-
 ```bash
-cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug
-cmake --build build --config Debug
-ctest --test-dir build --build-config Debug --verbose
+cmake -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build
 ```
 
-> 🐛 `Debug` is the default build type, with full symbols and zero optimization.
->
-> 🚀 A `Release` build is available and enabled:
->
-> ```bash
-> cmake --build build --config Release
-> ctest --test-dir build --build-config Release --verbose
-> ```
+---
+
+## ⚠️ Requirements
+
+> - **Clang++ 20.1.6**
+> - **libc++ 20.1.6**
+> - **CMake 3.31.6**
+> - `-stdlib=libc++` must be correctly configured
 
 ---
 
-## 🧭 Things to Explore
+## 🧪 Run Tests
 
-If you're new to modern C++, this project contains ideas and tools worth exploring further:
+```bash
+./build/credit_test          # Static assertions (compile-time logic)
+./build/credit_runtime_test  # Catch2 unit tests (runtime behavior)
+```
 
-- `std::string_view` — for safe, efficient string slicing
-- `std::ranges::views` — declarative data transformations
-- `constexpr` logic and `static_assert` — compile-time correctness
-- Minimal `enum class`-based API design
-- CMake multi-config with Ninja (Debug vs Release)
-- Adding `stopwatch.hxx` to measure runtime performance
+Tests are split into:
+- `credit_test`: Verifies compile-time logic (e.g., `constexpr` correctness)
+- `credit_runtime_test`: Uses **Catch2** to validate behavior with runtime input
+
+> Both are automatically built and require no extra configuration.
 
 ---
+
+## 🔍 Things to Explore
+
+- Why use `std::string_view` instead of `std::string`?
+- What are the advantages of compile-time validation (`constexpr`, `static_assert`)?
+- How does using `enum class` help clarify logic and avoid bugs?
+- Could this be adapted to use a different algorithm (e.g., Verhoeff)?
+- Why is `std::array` used instead of `std::vector`?
+
+---
+
+## 📎 Project Philosophy
+
+This implementation demonstrates how clarity, correctness, and structure can be achieved even in early programming problems.  
+It avoids legacy functions like `get_long()` and encourages strong types, modern abstractions, and compile-time safety.
+
+See [`PHILOSOPHY.md`](./PHILOSOPHY.md) for broader design goals and the origin of this project’s approach.
+
+---
+
+> **Disclaimer**  
+> This reimplementation is not affiliated with Harvard or CS50.  
+> It is offered for learning and exploration, and should not be considered official course material.
