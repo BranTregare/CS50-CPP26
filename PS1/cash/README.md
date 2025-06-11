@@ -14,18 +14,30 @@ The user is prompted to enter the amount owed, expressed in the lowest currency 
 
 ## ✨ Key Features
 
-- Fully integer-based (`std::uint32_t`); no floating-point arithmetic
-- Uses `std::array`, `std::span`, and `constexpr` for clarity and safety
-- Supports both **US** and **EU** currency sets
-- Generalized greedy algorithm using reusable logic
-- Built-in timing via a `StopWatch` utility
+- Fully integer-based (`std::uint32_t`); no floating-point arithmetic  
+- Uses `std::array`, `std::span`, and `constexpr` for clarity and safety  
+- Supports both **US** and **EU** currency sets  
+- Generalized greedy algorithm using reusable logic  
+- Built-in timing via a `StopWatch` utility  
 
 **Sample Output:**
-```text
-Amount owed in lowest token value: 117
-US tokens used: 6
+```
+Amount owed in lowest token value: 117  
+US tokens used: 6  
 EU tokens used: 4
 ```
+
+---
+
+## 🔍 What’s Different?
+
+| Aspect          | Traditional CS50 `cash.c`       | This C++26 Version                        |
+|----------------|----------------------------------|-------------------------------------------|
+| Input handling | `get_float()` + rounding         | `std::cin` with `std::uint32_t`           |
+| Currency set   | US coins only                    | US and EU coins and bills                 |
+| Algorithm      | Hardcoded greedy logic           | Generalized using `std::span` and `array` |
+| Data structures| Primitives                       | `std::array`, `std::span`, `constexpr`    |
+| Validation     | Float-based, potential rounding  | Fully integer-safe, no rounding required  |
 
 ---
 
@@ -36,6 +48,8 @@ PS1/cash/
 ├── CMakeLists.txt              # Build configuration
 ├── README.md                   # This file
 ├── PHILOSOPHY.md               # Design goals and rationale
+├── TEACHING-INSTRUCTOR.md      # Instructor guidance
+├── TEACHING-STUDENT.md         # Exploration hints for students
 ├── src/
 │   └── cash.cxx                # Main logic: token calculation
 └── src/include/
@@ -52,16 +66,34 @@ cmake --build build
 ./build/cash
 ```
 
-> ⚠️ Requires:
-> - **Clang++ 20.1.6**
-> - **libc++ 20.1.6**
-> - **CMake 3.31.6**
+---
+
+## ⚠️ Requirements
+
+> - **Clang++ 20.1.6**  
+> - **libc++ 20.1.6**  
+> - **CMake 3.31.6**  
 > - Proper `-stdlib=libc++` configuration
 
 ---
 
-## 📎 Project Philosophy
+## 🔍 Things to Explore
+
+- Why avoid floating-point math for currency?  
+- What are the advantages of `std::span` over raw pointers?  
+- Could this support other currencies by passing different denominations?  
+- How would adding runtime configuration affect the implementation?
+
+---
+
+## 📌 Project Philosophy
 
 This implementation is not limited to coins, nor is it hardcoded to a single currency. It aims to demonstrate how clarity, correctness, and extensibility can coexist — even in an introductory-level problem.
 
 See [`PHILOSOPHY.md`](./PHILOSOPHY.md) for a broader look at the design values behind this project.
+
+---
+
+> **Disclaimer**  
+> This reimplementation is not affiliated with Harvard or CS50.  
+> It is offered for learning and exploration, and should not be considered official course material.
