@@ -1,0 +1,82 @@
+# === Build Artifacts ===
+/build/
+/CMakeFiles/
+/CMakeCache.txt
+/Makefile
+/cmake_install.cmake
+/install_manifest.txt
+.cache/
+
+# === Ninja ===
+/build.ninja
+/rules.ninja
+
+# === Compilation ===
+/compile_commands.json
+
+# === Binaries and Objects ===
+*.exe
+*.out
+*.app
+*.bin
+*.o
+*.obj
+*.lo
+*.a
+*.lib
+*.so
+*.dylib
+*.dll
+
+# === IDEs and Editor Files ===
+.vscode/
+/.idea/
+*.sublime-workspace
+*.sublime-project
+
+# === OS Metadata Files ===
+.DS_Store
+
+# === Test Output ===
+Testing/
+CTestTestfile.cmake
+DartConfiguration.tcl
+/test/*.xml
+
+# === Logs and Temporary Files ===
+*.log
+*.tmp
+*.swp
+*.bak
+*.old
+
+# === Coverage and Profiling ===
+/coverage/
+/*.gcda
+/*.gcno
+/*.gcov
+
+# === Clang-Tidy ===
+.clang-tidy
+.clang-tidy.yaml
+tidy.log
+
+# === Sanitizers ===
+/asan.log
+/tsan.log
+/msan.log
+/lsan.log
+/*.san.*
+*.asan.*
+*.tsan.*
+*.lsan.*
+
+# === Valgrind ===
+/valgrind.log
+/valgrind-out.*
+vgcore.*
+
+# === Other User Cache or Debug Artifacts ===
+*.core
+*.stackdump
+*.orig

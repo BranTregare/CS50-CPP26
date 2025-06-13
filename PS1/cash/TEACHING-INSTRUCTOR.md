@@ -1,75 +1,98 @@
 # TEACHING-INSTRUCTOR.md — PS1/cash
 
-This exercise reimagines CS50’s `cash.c` for a modern C++26 context. While the original version uses floating point input and fixed US coins, this version generalizes the problem into **integer-based greedy change-making**, applicable to any currency system.
+> This is one of those deceptively simple problems that invites rich insight. There's elegance in the exercise — and just enough depth to challenge without overwhelming.
 
-This instructor guide outlines the design decisions, teaching opportunities, and areas of exploration for more advanced learners.
+This project builds on CS50’s `cash.c`, which introduces a greedy algorithm for computing the minimum number of coins needed for change. This C++ version modernizes that logic by using containers like `std::array`, `std::span`, and `constexpr` constructs to enforce clarity, safety, and generality.
 
----
-
-## 🎯 Learning Objectives
-
-- Introduce `std::array`, `std::span`, and `constexpr` through a practical, intuitive domain (money).
-- Model safe and idiomatic integer arithmetic using `std::uint32_t` instead of float.
-- Demonstrate greedy algorithms in the real world — and their limits.
-- Encourage curiosity with built-in EU currency support and token generalization.
+At the PS1 level, students are only just learning to reason algorithmically. But they’ve seen loops, conditions, basic types — and they’ve already been introduced to memory errors in C. This version gives them a taste of correctness without losing the simplicity of the original.
 
 ---
 
-## 🧱 Design Notes
+## Teaching Emphases
 
-- `Default_US_Currency` and `Default_EU_Currency` are `constexpr std::array<CurrencyUnit>`, where `CurrencyUnit` is a typedef to `std::uint32_t`.
-- Input is done in the smallest unit (cents/eurocents) to avoid rounding.
-- `calculate_tokens()` takes a `std::span<const CurrencyUnit>`, illustrating safe range-based design.
-- `StopWatch` is used to model simple benchmarking.
-- No dynamic memory, no exceptions, no complex branching.
+### ✅ Simplicity and Generalization
 
----
+* The logic in `calculate_tokens` is not hard — it’s a single loop with a division and a modulus.
+* But it’s generalized: not tied to one currency, not tied to coins, and not hardcoded.
+* `std::span` keeps the logic generic and flexible, showing a design that scales without extra complexity.
 
-## 📎 Teaching Prompts
+Encourage students to notice that the exact same code works for US, EU, or arbitrary currencies. That’s the core insight here: parameterization leads to reuse.
 
-- What is the minimum type that ensures safe calculation of coin change?
-- Why was `std::span` chosen over raw arrays or `std::vector`?
-- Is greedy always optimal? Try `[4, 3, 1]` as a custom currency.
-- What are the tradeoffs in adding bills vs. keeping coins only?
-- Could we adapt the function for floating-point input? Should we?
+### 💡 Greedy Algorithm Pitfalls
 
----
+This is the moment to introduce failure modes of greedy algorithms.
 
-## 💡 Extensions for Advanced Students
+**\[4, 3, 1]** is the classic example:
 
-- Replace `std::array` with runtime-defined `std::vector` currency input.
-- Allow the user to specify denominations interactively.
-- Track not just the count, but *which* tokens are used.
-- Benchmark different token orders or compare greedy to dynamic programming.
+* Try making change for `6`.
+* Greedy chooses `4 + 1 + 1` (3 tokens).
+* Optimal is `3 + 3` (2 tokens).
 
----
+This is where students can see the difference between locally optimal and globally optimal strategies.
 
-## 🧭 Scope Boundaries
+**\[2, 3, 4]** is a red herring — but useful:
 
-Avoid overloading `cash` with concepts not yet introduced at this stage of CS50:
+* Greedy *always* fails here.
+* Why? Because it chooses `2` for everything, even when larger tokens are better.
+* Example: for `6`, greedy uses `2 + 2 + 2`, while optimal is `3 + 3` or `4 + 2`.
 
-- No templates, metaprogramming, or polymorphism  
-- No formatted parsing or exception handling  
-- No currency formatting or localization  
+The trick: `2` is the smallest even token and divides everything. Greedy never even *looks* at the others.
 
-Instead, focus on:
-- `std::span`, `array`, `print`, and simple benchmarking  
-- Clear, type-safe greedy logic  
-- Subtle correctness (integer vs float)
+This highlights a subtle teaching point: **order matters**, and **greedy assumes earlier is better**.
 
----
+Letting students trip on this early gives you an opportunity to talk about algorithmic assumptions without going over their heads. It doesn’t need theory yet — just experimentation.
 
-## 🔍 Note on Currency and Floating-Point
+**\[7, 3, 1]** is a great teaching contrast:
 
-CS50’s original `cash.c` uses `get_float` for input and rounding of float values. This project deliberately avoids that approach. Currency should **never** be modeled with float or double due to:
+* Greedy always works here.
+* Why? Because the denominations are **prime**.
+* No smaller token can be combined to make a larger one.
 
-- Inherent rounding imprecision  
-- Unsafe comparison semantics (e.g., using epsilon thresholds)  
-- Dangerous coercions between `float` and `double` that may amplify errors  
-- Domain mismatches: money is discrete, not continuous
-
-This version models amounts in the smallest unit (cents/eurocents), using `std::uint32_t`. This is clearer, safer, and aligned with real-world engineering.
+This makes it a useful way to explore what makes some greedy algorithms robust. It's also good practice in pattern recognition: students can test cases and start asking *why* it never fails.
 
 ---
 
-> 📎 See [`PHILOSOPHY.md`](./PHILOSOPHY.md) for the broader values and justification behind the design of this project.
+### 🔍 Note on Currency and Floating-Point
+
+The original CS50 `cash.c` uses `get_float` and then rounds to an integer number of cents. This modern C++ version bypasses that entirely — and deliberately so.
+
+Currency should almost never be modeled using floating-point types. The reasons are technical and pedagogical:
+
+* Decimal rounding is inherently imprecise in binary floating-point
+* Comparisons require epsilon thresholds, which students aren't ready to reason about
+* Mixing `float` and `double` silently introduces new errors
+* Most importantly: **money is discrete**, and floating-point suggests continuity
+
+By modeling amounts in the smallest unit (e.g. cents or eurocents) as `std::uint32_t`, we make correctness the default. There's no rounding bug to debug. No epsilon to fudge. Just a clear, deterministic representation.
+
+Let students take this for granted at first. But it helps to understand *why* this matters — and to surface that understanding when the opportunity arises. This isn’t just a coding trick; it’s an important modeling choice that avoids a class of subtle and pervasive bugs.
+
+---
+
+## Discussion Starters
+
+* Why is this integer-only? What problems do floats introduce?
+* Why are `std::array` and `std::span` better than raw C arrays or `std::vector`?
+* What would it take to report *which* tokens were used?
+* Could you implement the same logic in pure C?
+* What if the currency data came from the user at runtime?
+
+---
+
+## Teaching Strategy
+
+Let students experiment with alternative currencies. Let them discover the failure modes. Don’t spoon-feed the theory — let the code surface the questions:
+
+* “Why didn’t it choose `3 + 3`?”
+* “Why does greedy fail here?”
+* “How would I fix that?”
+
+Let those questions guide the learning.
+
+The goal here isn’t just to write a token counter. It’s to build an intuition for:
+
+* When algorithms work
+* When they don’t
+* And what design tradeoffs are worth making
+
+In short: teach the *thinking*, not just the *code*.
