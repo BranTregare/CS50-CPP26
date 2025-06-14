@@ -56,4 +56,3 @@ See [`TEACHING-STUDENT.md`](./TEACHING-STUDENT.md) and [`TEACHING-INSTRUCTOR.md`
 
 ---
 
-📎 [Download PHILOSOPHY-cash.md](sandbox:/mnt/data/PHILOSOPHY-cash.md)

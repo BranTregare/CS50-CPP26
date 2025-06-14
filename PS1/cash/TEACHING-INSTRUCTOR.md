@@ -1,98 +1,74 @@
 # TEACHING-INSTRUCTOR.md — PS1/cash
 
-> This is one of those deceptively simple problems that invites rich insight. There's elegance in the exercise — and just enough depth to challenge without overwhelming.
-
-This project builds on CS50’s `cash.c`, which introduces a greedy algorithm for computing the minimum number of coins needed for change. This C++ version modernizes that logic by using containers like `std::array`, `std::span`, and `constexpr` constructs to enforce clarity, safety, and generality.
-
-At the PS1 level, students are only just learning to reason algorithmically. But they’ve seen loops, conditions, basic types — and they’ve already been introduced to memory errors in C. This version gives them a taste of correctness without losing the simplicity of the original.
+> Design choices are never just technical — they reflect clarity of purpose and trust in the student.
 
 ---
 
-## Teaching Emphases
+This implementation reimagines CS50's `cash.c` in modern C++26, preserving the problem's spirit while emphasizing type safety, generality, and design intent. It’s deliberately simple on the surface — but pedagogically rich under the hood.
 
-### ✅ Simplicity and Generalization
+## 💰 Why Integer-Only?
 
-* The logic in `calculate_tokens` is not hard — it’s a single loop with a division and a modulus.
-* But it’s generalized: not tied to one currency, not tied to coins, and not hardcoded.
-* `std::span` keeps the logic generic and flexible, showing a design that scales without extra complexity.
+The original `cash.c` uses `get_float()` and rounds to the nearest cent. But floating-point arithmetic is a dangerous abstraction for currency:
 
-Encourage students to notice that the exact same code works for US, EU, or arbitrary currencies. That’s the core insight here: parameterization leads to reuse.
+- Rounding is unpredictable.
+- Float-to-double coercion can introduce hidden bugs.
+- Equality comparisons require epsilon thresholds — a concept far beyond week 1.
+- Currency is discrete. Float is continuous. The model is wrong.
 
-### 💡 Greedy Algorithm Pitfalls
+This project uses `std::uint32_t` to model **discrete, countable currency units** (e.g., cents or eurocents). It’s cleaner, safer, and reinforces a better mental model.
 
-This is the moment to introduce failure modes of greedy algorithms.
+## 📦 Why `std::span`?
 
-**\[4, 3, 1]** is the classic example:
+Passing a token array by value is wasteful. Passing a pointer and size is verbose. `std::span` gives us:
 
-* Try making change for `6`.
-* Greedy chooses `4 + 1 + 1` (3 tokens).
-* Optimal is `3 + 3` (2 tokens).
+- A safe, read-only view into the token array
+- No copying or allocations
+- Compile-time sizing when passed a `std::array`
 
-This is where students can see the difference between locally optimal and globally optimal strategies.
+This allows a **single** function (`calculate_tokens`) to work for both US and EU tokens — and any user-defined currency.
 
-**\[2, 3, 4]** is a red herring — but useful:
+## 🔢 Token Count Type: `std::uint16_t`
 
-* Greedy *always* fails here.
-* Why? Because it chooses `2` for everything, even when larger tokens are better.
-* Example: for `6`, greedy uses `2 + 2 + 2`, while optimal is `3 + 3` or `4 + 2`.
+The number of tokens returned by the greedy algorithm is tracked using `std::uint16_t`. This might seem oddly specific, but it reflects careful domain modeling:
 
-The trick: `2` is the smallest even token and divides everything. Greedy never even *looks* at the others.
+- Token counts are never negative → use unsigned types
+- `uint8_t` (max 255) is too small for pathological cases
+- `uint16_t` allows up to 65,535 tokens, more than enough for real-world inputs
 
-This highlights a subtle teaching point: **order matters**, and **greedy assumes earlier is better**.
+### 📚 Historical Context
 
-Letting students trip on this early gives you an opportunity to talk about algorithmic assumptions without going over their heads. It doesn’t need theory yet — just experimentation.
+During the Weimar Republic hyperinflation (1921–1923), prices soared to billions of marks for basic goods. In such extreme conditions, you could imagine needing **thousands of tokens** just to make change. A `std::uint8_t` would **overflow silently** in such a system. `std::uint16_t` is therefore a prudent, forward-compatible choice — and a teachable moment in **domain-aware type selection**.
 
-**\[7, 3, 1]** is a great teaching contrast:
+## 🧪 Pathological Token Sets
 
-* Greedy always works here.
-* Why? Because the denominations are **prime**.
-* No smaller token can be combined to make a larger one.
+Greedy algorithms do not always yield the optimal result. Two excellent examples to demonstrate this:
 
-This makes it a useful way to explore what makes some greedy algorithms robust. It's also good practice in pattern recognition: students can test cases and start asking *why* it never fails.
+- `[4, 3, 1]`: Try making change for 6. Greedy gives `4 + 1 + 1` (3 tokens), but the optimal solution is `3 + 3` (2 tokens).
+- `[2, 3, 4]`: Greedy always starts with `2`, meaning it will never consider `3` or `4` — and will always produce even-numbered outputs. This token set **cannot** represent all possible totals effectively.
 
----
+These examples are powerful tools for teaching **algorithmic limitations** and the value of counterexamples.
 
-### 🔍 Note on Currency and Floating-Point
+Contrast with:
 
-The original CS50 `cash.c` uses `get_float` and then rounds to an integer number of cents. This modern C++ version bypasses that entirely — and deliberately so.
+- `[7, 3, 1]`: A token set made of **primes**. Greedy always produces a result — and it’s always optimal for small inputs. Students may be surprised at how robust it is, despite its oddity.
 
-Currency should almost never be modeled using floating-point types. The reasons are technical and pedagogical:
+These sets are also useful for discussions on **greedy optimality conditions**, **coin change problems**, and the importance of **counterexamples** in pedagogy.
 
-* Decimal rounding is inherently imprecise in binary floating-point
-* Comparisons require epsilon thresholds, which students aren't ready to reason about
-* Mixing `float` and `double` silently introduces new errors
-* Most importantly: **money is discrete**, and floating-point suggests continuity
+## 🧵 Design Reflections
 
-By modeling amounts in the smallest unit (e.g. cents or eurocents) as `std::uint32_t`, we make correctness the default. There's no rounding bug to debug. No epsilon to fudge. Just a clear, deterministic representation.
+- The code generalizes the greedy algorithm to any currency.
+- It uses **range-based programming idioms** (`std::array`, `std::span`) to avoid index manipulation.
+- It is deliberately minimal: no dynamic memory, no unnecessary abstractions.
+- The `StopWatch` utility is present but unobtrusive.
 
-Let students take this for granted at first. But it helps to understand *why* this matters — and to surface that understanding when the opportunity arises. This isn’t just a coding trick; it’s an important modeling choice that avoids a class of subtle and pervasive bugs.
+This is a good example of how C++26 can be **approachable and expressive** — without reaching for advanced metaprogramming or concepts.
 
----
+## 🧭 What to Emphasize When Teaching
 
-## Discussion Starters
+- Encourage reasoning about data types: Why `uint32_t` for money? Why `uint16_t` for counts?
+- Point out the dangers of `float` for anything financial.
+- Reinforce generalization: the algorithm isn't hardcoded to any one currency.
+- Ask students to **experiment** with pathological token sets (e.g., `[4, 3, 1]`, `[2, 3, 4]`) and observe where greedy fails.
+- Challenge advanced students to implement optimal algorithms (e.g., dynamic programming) — and compare results.
 
-* Why is this integer-only? What problems do floats introduce?
-* Why are `std::array` and `std::span` better than raw C arrays or `std::vector`?
-* What would it take to report *which* tokens were used?
-* Could you implement the same logic in pure C?
-* What if the currency data came from the user at runtime?
-
----
-
-## Teaching Strategy
-
-Let students experiment with alternative currencies. Let them discover the failure modes. Don’t spoon-feed the theory — let the code surface the questions:
-
-* “Why didn’t it choose `3 + 3`?”
-* “Why does greedy fail here?”
-* “How would I fix that?”
-
-Let those questions guide the learning.
-
-The goal here isn’t just to write a token counter. It’s to build an intuition for:
-
-* When algorithms work
-* When they don’t
-* And what design tradeoffs are worth making
-
-In short: teach the *thinking*, not just the *code*.
+This project is a solid opportunity to contrast **correctness vs convenience**, and to introduce the idea that every type in C++ carries *intent* — or should.

@@ -6,9 +6,10 @@
 #include <span>
 #include <string>
 
+// Define a type alias for currency units (in cents or eurocents)
 using CurrencyUnit = std::uint32_t;
 
-// US currency in cents
+// Define US currency denominations in cents (sorted from largest to smallest)
 constexpr auto Default_US_Currency = std::array{
     CurrencyUnit{10000}, // $100
     CurrencyUnit{5000},  // $50
@@ -22,7 +23,7 @@ constexpr auto Default_US_Currency = std::array{
     CurrencyUnit{1}      // penny
 };
 
-// EU currency in eurocents
+// Define EU currency denominations in eurocents (sorted from largest to smallest)
 constexpr auto Default_EU_Currency = std::array{
     CurrencyUnit{50000}, // €500
     CurrencyUnit{20000}, // €200
@@ -41,36 +42,39 @@ constexpr auto Default_EU_Currency = std::array{
     CurrencyUnit{1}      // 1¢
 };
 
-[[nodiscard ]]auto calculate_tokens(CurrencyUnit amount, std::span<const CurrencyUnit> denominations) -> int
-{
-  auto tokens_used = 0;
+// Calculates the minimum number of tokens required to represent the given amount
+[[nodiscard]] constexpr auto calculate_tokens(CurrencyUnit amount, std::span<const CurrencyUnit> denominations) {
+  // use std::uint16_t for token count: safe upper bound, unsigned, strongly typed.
+  auto tokens_used = std::uint16_t{0}; // Accumulator for token count
 
-  for (auto token : denominations)
-  {
-    tokens_used += amount / token;
-    amount %= token;
+  // Iterate over each denomination greedily using the largest possible token
+  for (auto token : denominations) {
+    tokens_used += amount / token; // Add the number of tokens used for this denomination
+    amount %= token;               // Update amount to remainder
   }
 
   return tokens_used;
 }
 
-int main()
-{
-  auto amount_owed = CurrencyUnit{};
+int main() {
+  auto amount_owed = CurrencyUnit{}; // Amount entered by the user (in the smallest currency unit)
 
+  // Prompt the user for input
   std::print("Amount owed in lowest token value: ");
   std::cin >> amount_owed;
 
-  if (std::cin.fail())
-  {
-    std::cin.clear();
-    std::cin.ignore(1 << 10, '\n');
+  // Validate input
+  if (std::cin.fail()) {
+    std::cin.clear();                     // Clear error flag
+    std::cin.ignore(1 << 10, '\n');      // Discard invalid input
     std::println("Invalid input.");
     return 1;
   }
 
+  // Start timing the calculation
   auto t = StopWatch("CalculationTime");
 
+  // Output the token counts for both currency systems
   std::println("US tokens used: {}", calculate_tokens(amount_owed, Default_US_Currency));
   std::println("EU tokens used: {}", calculate_tokens(amount_owed, Default_EU_Currency));
 
