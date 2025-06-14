@@ -1,23 +1,21 @@
-## Project Philosophy: Why Rebuild a Trivial Problem?
+# Philosophy
 
-This project takes the well-known CS50 “Credit” problem — a simple card validator — and reimplements it in modern, idiomatic C++26.
+This project reimagines Harvard's CS50 problem sets using modern C++26. It emphasizes correctness, clarity, safety, and performance — not as tradeoffs, but as complementary principles.
 
-But this is not about making the solution "better" or "faster." Instead, it's about answering a deeper question:
+The goal is not to hand students pre-digested answers, but to present carefully structured solutions that expose the why as much as the how. Each problem stands on its own: documented, tested, and designed for exploration. When the original CS50 assignment succeeds (as in PS1/credit), that success is amplified; when it falls short (as in PS5/speller), the project provides a better path forward — without compromising on pedagogy.
 
-    Can a trivial programming problem become a meaningful exercise in design, safety, and clarity when approached through the lens of modern C++?
+Although written in C++26, the emphasis is not on novelty but on relevance: standard containers, value semantics, compile-time guarantees, and STL idioms are used where they clarify, not where they merely impress.
 
-What This Project Demonstrates:
+The work is informed by decades of professional experience, tempered by a desire to make that experience teachable.
 
-- That C++ can be expressive and safe, even in small, beginner-friendly domains.
-- That compile-time programming can be used not only for performance, but for correctness and constraint enforcement.
-- That unit testing, modular design, and type safety are not luxuries — they scale even to the smallest programs.
-- That teaching and showcasing modern C++ doesn't require complex problems — only clear intent.
+---
 
-Why Start with CS50’s “Credit”?
+> “In 1994, we optimized because we were desperate,  
+> our compilers weren’t up to it,  
+> and it was the right thing to do.  
+>
+> Today, we should optimize because it is right.”
 
-Many learners encounter this problem first in C, and later again in Python. Python’s revisit is often used to show how expressive high-level languages can be.
+This project carries forward the mindset born from constrained systems, where performance wasn’t optional — it was survival. Even with today’s abundant compute, clarity, safety, and efficiency are not opposites. They are engineering virtues.
 
-This project says:
-    C++ can be just as expressive, safe, and understandable — when written well.
-
-It’s a didactic and demonstrative effort, intended to model good habits and modern language features in a context learners already understand.
+See `TEACHING-INSTRUCTOR.md` for a reflection on why these values still matter.
