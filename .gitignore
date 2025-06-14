@@ -1,82 +1,76 @@
-# === Build Artifacts ===
-/build/
-/CMakeFiles/
-/CMakeCache.txt
-/Makefile
-/cmake_install.cmake
-/install_manifest.txt
-.cache/
-
-# === Ninja ===
-/build.ninja
-/rules.ninja
-
-# === Compilation ===
-/compile_commands.json
-
-# === Binaries and Objects ===
-*.exe
+# Build artifacts
+build/
 *.out
+*.exe
 *.app
-*.bin
 *.o
 *.obj
-*.lo
-*.a
-*.lib
 *.so
 *.dylib
 *.dll
+*.a
+*.lib
+*.la
+*.lai
+*.lo
+*.slo
 
-# === IDEs and Editor Files ===
-.vscode/
-/.idea/
-*.sublime-workspace
-*.sublime-project
-
-# === OS Metadata Files ===
-.DS_Store
-
-# === Test Output ===
-Testing/
-CTestTestfile.cmake
-DartConfiguration.tcl
-/test/*.xml
-
-# === Logs and Temporary Files ===
-*.log
+# Intermediate & debug files
+*.d
 *.tmp
-*.swp
 *.bak
-*.old
-
-# === Coverage and Profiling ===
-/coverage/
-/*.gcda
-/*.gcno
-/*.gcov
-
-# === Clang-Tidy ===
-.clang-tidy
-.clang-tidy.yaml
-tidy.log
-
-# === Sanitizers ===
-/asan.log
-/tsan.log
-/msan.log
-/lsan.log
-/*.san.*
-*.asan.*
-*.tsan.*
-*.lsan.*
-
-# === Valgrind ===
-/valgrind.log
-/valgrind-out.*
-vgcore.*
-
-# === Other User Cache or Debug Artifacts ===
-*.core
-*.stackdump
 *.orig
+*.swp
+*.swo
+*.swn
+*.un~
+.session
+Session.vim
+*~
+*.log
+tags
+tags.lock
+
+# CMake artifacts
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+compile_commands.json
+Makefile
+
+# Ninja build system
+.ninja_deps
+.ninja_log
+build.ninja
+rules.ninja
+
+# Editor/IDE cache (but keep shared config)
+.idea/
+!.idea/misc.xml
+!.idea/modules.xml
+!.idea/cmake.xml
+!.idea/codeStyles/
+!.idea/runConfigurations/
+.idea/.idea.IC/
+.idea/.idea.VCS/
+.idea/.idea.CLangd/
+.idea/.idea.*.iml
+.idea/.workspace.xml
+.idea/usage.statistics.xml
+
+.vscode/ipch/
+.vscode/.history/
+.clangd/
+.lsp/
+
+# Miscellaneous
+.cache/
+.DS_Store
+Thumbs.db
+.dSYM/
+.editorconfig
+*.test
+*.test.*
+
+# Python testing (if any)
+.pytest_cache/
