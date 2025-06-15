@@ -14,6 +14,11 @@ A **bleeding-edge toolchain** is required:
 > ⚠️ *Clang++ 20.1.6 is not fully standard-compliant with C++26 — no compiler is at this time. However, it is currently the most portable and practical choice.
 > Older or partially-supported environments will not build this code correctly.*
 
+> ⚠️ **Note on portability**
+> This code is written and tested using Clang++ 20.1.6 and libc++ 20.1.6.
+> While you are free to use a different toolchain, no guarantees are made about compatibility or correctness outside this configuration.
+> Some features (e.g., `cartesian_product`) are implemented manually due to lack of standard library support.
+
 ## 🎯 Goals
 
 * Showcase **idiomatic, modern C++** in the spirit of CS50
