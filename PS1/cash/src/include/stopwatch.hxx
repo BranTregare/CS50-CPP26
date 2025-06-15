@@ -19,9 +19,12 @@ private:
   std::string name_;
 
 public:
-  inline void reset() noexcept { last = Clock::now(); }
+  inline void reset() noexcept
+  {
+    last = Clock::now();
+  }
   inline auto operator()() const noexcept
-  { // returns time in Resolution
+  {  // returns time in Resolution
     auto duration = std::chrono::duration<double, std::nano>(Clock::now() - last);
     return duration;
   }
@@ -41,4 +44,4 @@ public:
     std::println("SW ~ {0}: s   :{1:10} ", name_, std::chrono::duration<double>(endtime));
   }
 };
-#endif // STOPWATCH_HXX
+#endif  // STOPWATCH_HXX

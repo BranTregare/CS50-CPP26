@@ -26,4 +26,4 @@ static_assert(test_validate(0) == CardType::INVALID, "Zero input");
 // Uncommenting this test may cause compilation to fail.
 // static_assert(test_validate(41111111111111112222ULL) == CardType::INVALID, "Too long");
 
-} // namespace test
+}  // namespace credit::test
