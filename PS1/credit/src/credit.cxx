@@ -21,7 +21,7 @@ enum class CardType : std::uint8_t
 };
 
 // Map card type enum to string_view (for display purposes)
-constexpr std::array<std::string_view, 4> CardType_to_string_view{"AMEX", "MASTERCARD", "VISA", "INVALID"};
+constexpr std::array<std::string_view, 4> CardType_string_view_Map{"AMEX", "MASTERCARD", "VISA", "INVALID"};
 
 // Convert card_type_t to std::size_t index into map array
 constexpr auto CardType_to_index = [](CardType Card_Type) noexcept {
@@ -29,19 +29,19 @@ constexpr auto CardType_to_index = [](CardType Card_Type) noexcept {
 };
 
 // Convert character to uint8_t (strong typing, avoids ambiguity)
-constexpr auto char_to_uint8_t = [](const char Character) noexcept {
+constexpr auto const_char_to_uint8_t = [](const char Character) noexcept {
   return static_cast<std::uint8_t>(Character);
 };
 
 // Convert int to uint8_t explicitly
-constexpr auto to_uint8_t = [](const int Value) noexcept {
+constexpr auto const_int_to_uint8_t = [](const int Value) noexcept {
   return static_cast<std::uint8_t>(Value);
 };
 
 // Explicitly convert char to uint8_t before calling std::isdigit
 // to avoid implicit conversions and highlight strong typing.
 constexpr auto is_ascii_digit = [](const char Character) noexcept {
-  return std::isdigit(char_to_uint8_t(Character)) ? true : false;
+  return std::isdigit(const_char_to_uint8_t(Character)) ? true : false;
 };
 
 // Convert range distance to std::size_t (e.g., for digit count)
@@ -111,7 +111,7 @@ public:
   const auto Count = num_digits(Card_Number);
   DigitSequence Digit_Sequence(Count);
   for (std::size_t i = 0; i < Count; ++i) {
-    Digit_Sequence.Digits_[i] = to_uint8_t(Card_Number % BASE);
+    Digit_Sequence.Digits_[i] = const_int_to_uint8_t(Card_Number % BASE);
     Card_Number /= BASE;
   }
   return Digit_Sequence;
