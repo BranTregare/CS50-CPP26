@@ -7,11 +7,11 @@
 
 #include "include/stopwatch.hxx"
 
-// Define a type alias for currency units (in cents or eurocents)
+// Type alias for the smallest currency unit (e.g., cents or eurocents)
 using CurrencyUnit = std::uint32_t;
 
-// Define US currency denominations in cents (sorted from largest to smallest)
-constexpr auto Default_US_Currency = std::array{
+// US currency denominations in cents, largest to smallest
+constexpr auto US_Currency = std::array{
     CurrencyUnit{10000},  // $100
     CurrencyUnit{5000},   // $50
     CurrencyUnit{2000},   // $20
@@ -24,8 +24,8 @@ constexpr auto Default_US_Currency = std::array{
     CurrencyUnit{1}       // penny
 };
 
-// Define EU currency denominations in eurocents (sorted from largest to smallest)
-constexpr auto Default_EU_Currency = std::array{
+// EU currency denominations in eurocents, largest to smallest
+constexpr auto EU_Currrency = std::array{
     CurrencyUnit{50000},  // €500
     CurrencyUnit{20000},  // €200
     CurrencyUnit{10000},  // €100
@@ -43,43 +43,40 @@ constexpr auto Default_EU_Currency = std::array{
     CurrencyUnit{1}       // 1¢
 };
 
-// Calculates the minimum number of tokens required to represent the given amount
-[[nodiscard]] constexpr auto calculate_tokens(CurrencyUnit amount, std::span<const CurrencyUnit> denominations)
+// Compute the minimum number of currency tokens required to represent a given amount
+[[nodiscard]] constexpr auto calculate_tokens(
+    CurrencyUnit Amount,
+    std::span<const CurrencyUnit> denominations
+) -> std::uint16_t
 {
-  // use std::uint16_t for token count: safe upper bound, unsigned, strongly typed.
-  auto tokens_used = std::uint16_t{0};  // Accumulator for token count
+    auto Tokens_Used = std::uint16_t{0};
 
-  // Iterate over each denomination greedily using the largest possible token
-  for (auto token : denominations) {
-    tokens_used += amount / token;  // Add the number of tokens used for this denomination
-    amount %= token;                // Update amount to remainder
-  }
+    for (auto Token : denominations) {
+        Tokens_Used += Amount / Token;
+        Amount %= Token;
+    }
 
-  return tokens_used;
+    return Tokens_Used;
 }
 
-int main()
+auto main() -> int
 {
-  auto amount_owed = CurrencyUnit{};  // Amount entered by the user (in the smallest currency unit)
+    auto Amount_Owed = CurrencyUnit{};
 
-  // Prompt the user for input
-  std::print("Amount owed in lowest token value: ");
-  std::cin >> amount_owed;
+    std::print("Amount owed in lowest token value: ");
+    std::cin >> Amount_Owed;
 
-  // Validate input
-  if (std::cin.fail()) {
-    std::cin.clear();                // Clear error flag
-    std::cin.ignore(1 << 10, '\n');  // Discard invalid input
-    std::println("Invalid input.");
-    return 1;
-  }
+    if (std::cin.fail()) {
+        std::cin.clear();
+        std::cin.ignore(1 << 10, '\n');
+        std::println("Invalid input.");
+        return 1;
+    }
 
-  // Start timing the calculation
-  auto t = StopWatch("CalculationTime");
+    auto t = StopWatch("CalculationTime");
 
-  // Output the token counts for both currency systems
-  std::println("US tokens used: {}", calculate_tokens(amount_owed, Default_US_Currency));
-  std::println("EU tokens used: {}", calculate_tokens(amount_owed, Default_EU_Currency));
+    std::println("US tokens used: {}", calculate_tokens(Amount_Owed, US_Currency));
+    std::println("EU tokens used: {}", calculate_tokens(Amount_Owed, EU_Currrency));
 
-  return 0;
+    return 0;
 }
