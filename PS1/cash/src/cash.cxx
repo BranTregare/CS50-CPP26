@@ -46,12 +46,12 @@ constexpr auto EU_Currrency = std::array{
 // Compute the minimum number of currency tokens required to represent a given amount
 [[nodiscard]] constexpr auto calculate_tokens(
     CurrencyUnit Amount,
-    std::span<const CurrencyUnit> denominations
+    std::span<const CurrencyUnit> Denominations
 ) -> std::uint16_t
 {
     auto Tokens_Used = std::uint16_t{0};
 
-    for (auto Token : denominations) {
+    for (auto Token : Denominations) {
         Tokens_Used += Amount / Token;
         Amount %= Token;
     }
