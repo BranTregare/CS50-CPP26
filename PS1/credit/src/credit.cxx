@@ -21,7 +21,7 @@ enum class CardType : std::uint8_t
 };
 
 // Map card type enum to string_view (for display purposes)
-constexpr std::array<std::string_view, 4> CardType_string_view_Map{"AMEX", "MASTERCARD", "VISA", "INVALID"};
+constexpr std::array<std::string_view, 4> CardType_to_string_view_Map{"AMEX", "MASTERCARD", "VISA", "INVALID"};
 
 // Convert card_type_t to std::size_t index into map array
 constexpr auto CardType_to_index = [](CardType Card_Type) noexcept {
@@ -264,7 +264,7 @@ int main()
   }
 
   const auto type = credit::validate_card_number(Card_Number);
-  std::println("{}", credit::CardType_to_string_view[credit::CardType_to_index(type)]);
+  std::println("{}", credit::CardType_to_string_view_Map[credit::CardType_to_index(type)]);
   return 0;
 }
 #endif  // CREDIT_NO_MAIN
