@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <iostream>
 #include <limits>
@@ -20,8 +21,8 @@ enum class CardType : std::uint8_t
   INVALID
 };
 
-// Map card type enum to string_view (for display purposes)
-constexpr std::array<std::string_view, 4> CardType_to_string_view_Map{"AMEX", "MASTERCARD", "VISA", "INVALID"};
+// Map CardType enum to string_view (for display purposes)
+constexpr std::array<std::string_view, 4> CardType_to_string_view{"AMEX", "MASTERCARD", "VISA", "INVALID"};
 
 // Convert card_type_t to std::size_t index into map array
 constexpr auto CardType_to_index = [](CardType Card_Type) noexcept {
@@ -105,13 +106,16 @@ public:
   [[nodiscard]] constexpr auto rend() const noexcept = delete;
 };
 
-// Convert a number to reversed digit_sequence
+// Convert a number to reversed DigitSequence
 [[nodiscard]] constexpr auto vectorise_number(std::uint64_t Card_Number) noexcept
 {
-  const auto Count = num_digits(Card_Number);
-  DigitSequence Digit_Sequence(Count);
-  for (std::size_t i = 0; i < Count; ++i) {
-    Digit_Sequence.Digits_[i] = const_int_to_uint8_t(Card_Number % BASE);
+  const auto Digit_Count = num_digits(Card_Number);
+  DigitSequence Digit_Sequence(Digit_Count);
+
+  // Use std::views::iota to avoid manual loop control.
+  // std::size_t{0} enforces strong typing — no implicit narrowing.
+  for (std::size_t Index : std::views::iota(std::size_t{0}, Digit_Count)) {
+    Digit_Sequence.Digits_[Index] = const_int_to_uint8_t(Card_Number % BASE);
     Card_Number /= BASE;
   }
   return Digit_Sequence;
@@ -264,7 +268,7 @@ int main()
   }
 
   const auto type = credit::validate_card_number(Card_Number);
-  std::println("{}", credit::CardType_to_string_view_Map[credit::CardType_to_index(type)]);
+  std::println("{}", credit::CardType_to_string_view[credit::CardType_to_index(type)]);
   return 0;
 }
 #endif  // CREDIT_NO_MAIN
