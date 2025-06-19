@@ -21,6 +21,7 @@ enum class CardType : std::uint8_t
   INVALID
 };
 
+// type conversion lambdas
 // Map CardType enum to string_view (for display purposes)
 constexpr std::array<std::string_view, 4> CardType_to_string_view{"AMEX", "MASTERCARD", "VISA", "INVALID"};
 
@@ -49,6 +50,7 @@ constexpr auto is_ascii_digit = [](const char Character) noexcept {
 constexpr auto distance_to_size_t = [](auto First, auto Last) noexcept {
   return static_cast<std::size_t>(std::ranges::distance(First, Last));
 };
+// type conversion lambdas end
 
 // Credit card constraints
 constexpr auto MAX_DIGITS = std::size_t{16};
