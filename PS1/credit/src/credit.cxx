@@ -23,9 +23,10 @@ enum class CardType : std::uint8_t
 
 // type conversion lambdas
 // Map CardType enum to string_view (for display purposes)
-constexpr std::array<std::string_view, 4> CardType_to_string_view{"AMEX", "MASTERCARD", "VISA", "INVALID"};
+constexpr std::array CardType_to_string_view{std::string_view{"AMEX"}, std::string_view{"MASTERCARD"},
+                                             std::string_view{"VISA"}, std::string_view{"INVALID"}};
 
-// Convert card_type_t to std::size_t index into map array
+// Convert CardType to std::size_t index into the map array CardType_to_string_view.
 constexpr auto CardType_to_index = [](CardType Card_Type) noexcept {
   return static_cast<std::size_t>(Card_Type);
 };
@@ -50,13 +51,13 @@ constexpr auto is_ascii_digit = [](const char Character) noexcept {
 constexpr auto distance_to_size_t = [](auto First, auto Last) noexcept {
   return static_cast<std::size_t>(std::ranges::distance(First, Last));
 };
-// type conversion lambdas end
+// type conversion named lambda functions.
 
 // Credit card constraints
 constexpr auto MAX_DIGITS = std::size_t{16};
 constexpr auto BASE = std::uint8_t{10};
 
-// Compute number of decimal digits in an integer
+// Compute the number of decimal digits in an integer
 constexpr auto num_digits(std::uint64_t Number) noexcept
 {
   std::size_t Digits = 0;
@@ -117,7 +118,7 @@ public:
   // Use std::views::iota to avoid manual loop control.
   // std::size_t{0} enforces strong typing — no implicit narrowing.
   for (std::size_t Index : std::views::iota(std::size_t{0}, Digit_Count)) {
-    Digit_Sequence.Digits_[Index] = const_int_to_uint8_t(Card_Number % BASE);
+    Digit_Sequence.Digits_[Index] = const_int_to_uint8_t(Card_Number % BASE);  // NOLINT(*-narrowing-conversions)
     Card_Number /= BASE;
   }
   return Digit_Sequence;
@@ -135,9 +136,9 @@ constexpr auto stride(std::size_t Stride_Size, std::size_t Offset = 0) noexcept
   };
 }
 
-// Multiply digit by 2 (for Luhn algorithm)
+// Multiply the Digit by 2 (for Luhn algorithm)
 // Strongly typed doubling: preserves uint8_t type for clarity and safety
-// Avoids implicit promotion to int; keeps result in uint8_t domain
+// Avoids implicit promotion to int; keeps the Result in uint8_t domain
 constexpr auto multiply_by_2 = [](const std::uint8_t Digit) noexcept {
   const std::uint8_t Result = Digit * 2;
   return Result;
@@ -145,10 +146,10 @@ constexpr auto multiply_by_2 = [](const std::uint8_t Digit) noexcept {
 
 // Sum function for Luhn doubling rule
 // Strongly typed sum: ensures result remains within uint16_t domain
-// Avoids implicit promotion to int; keeps result in uint16_t domain
+// Avoids implicit promotion to int; keeps The Result in uint16_t domain
 constexpr auto luhn_sum = [](std::uint16_t Accumulation, std::uint8_t Value) noexcept {
-  const std::uint16_t result = Accumulation + (Value > 9 ? Value - 9 : Value);
-  return result;
+  const std::uint16_t Result = Accumulation + (Value > 9 ? Value - 9 : Value);
+  return Result;
 };
 
 // Luhn: checksum must be divisible by 10
@@ -190,9 +191,9 @@ constexpr auto accumulate_even_digits = [](const DigitSequence &digit_sequence) 
       !is_valid_checksum(Checksum))
     return CardType::INVALID;
 
-  const auto &it = Digits.crbegin();
-  const auto Msd = *it;               // Most significant digit
-  const auto Second_Msd = *(it + 1);  // Second most significant digit
+  const auto &Iterator = Digits.crbegin();
+  const auto Msd = *Iterator;               // Most significant digit
+  const auto Second_Msd = *(Iterator + 1);  // Second most significant digit
 
   // Card type inference based on prefix and length
   switch (Digit_Count) {
@@ -265,7 +266,6 @@ int main()
       std::println("Invalid input. Must be a non-zero number.");
       continue;
     }
-
     break;
   }
 

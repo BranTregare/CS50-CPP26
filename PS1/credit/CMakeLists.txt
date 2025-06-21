@@ -15,6 +15,7 @@ set(TEST_INCLUDE_DIR "${TEST_DIR}/include")
 
 # Main executable
 add_executable(credit ${SOURCE_DIR}/credit.cxx)
+target_compile_definitions(credit PRIVATE "CREDIT_NO_MAIN=")
 target_compile_options(credit PRIVATE -Wall -Wextra -Wpedantic -Werror)
 target_include_directories(credit PRIVATE ${INCLUDE_DIR})
 
