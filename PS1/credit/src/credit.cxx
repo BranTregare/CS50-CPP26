@@ -87,6 +87,7 @@ public:
   {
     return Digits_.cbegin();
   }
+
   [[nodiscard]] constexpr auto cend() const noexcept
   {
     return Digits_.cbegin() + Count_;
@@ -97,6 +98,7 @@ public:
   {
     return std::reverse_iterator(cend());
   }
+
   [[nodiscard]] constexpr auto crend() const noexcept
   {
     return std::reverse_iterator(cbegin());
@@ -104,8 +106,11 @@ public:
 
   // Prevent accidental mutation or raw access
   [[nodiscard]] constexpr auto begin() const noexcept = delete;
+
   [[nodiscard]] constexpr auto end() const noexcept = delete;
+
   [[nodiscard]] constexpr auto rbegin() const noexcept = delete;
+
   [[nodiscard]] constexpr auto rend() const noexcept = delete;
 };
 
@@ -214,15 +219,12 @@ constexpr auto accumulate_even_digits = [](const DigitSequence &digit_sequence) 
   return CardType::INVALID;
 }
 }  // namespace credit
-
-#if defined(CREDIT_NO_MAIN)
-
+#if MAIN_NOT_EMPTY != 1
 int main()
 {
   return 0;
 }
-
-#else
+#elif MAIN_NOT_EMPTY == 1
 
 int main()
 {
@@ -273,4 +275,5 @@ int main()
   std::println("{}", credit::CardType_to_string_view[credit::CardType_to_index(type)]);
   return 0;
 }
+
 #endif  // CREDIT_NO_MAIN
