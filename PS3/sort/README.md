@@ -1,4 +1,4 @@
-# PS2: Sort — Algorithm Recognition via Benchmarking
+# PS3: Sort — Algorithm Recognition via Benchmarking
 
 This project contains **no code**, by design.
 
