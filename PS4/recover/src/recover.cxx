@@ -8,7 +8,7 @@
 #include "include/stopwatch.hxx"
 namespace recover
 {
-// utility lambdas remove error prone reinterpret casts from code
+// utility lambdas remove error prone reinterpret casts from code replace with safer bit_cast
 auto inline const_byte_ptr_to_const_char_ptr = [](const std::byte* Ptr) noexcept {
   return std::bit_cast<const char*>(Ptr);
 };
@@ -26,7 +26,7 @@ constexpr auto is_jpeg_header = [](const auto JPEG_Block) noexcept {
 const auto read_block = [](auto FAT_Block, std::ifstream& Raw_Disk_Image) {
   // Read a FAT conformant block From rawImage
   return Raw_Disk_Image.read(byte_ptr_to_char_ptr(FAT_Block.data()), FAT_Block.size()) && Raw_Disk_Image.good() ? true
-             : false;
+                                                                                                                : false;
 };
 
 auto write_block = [](const auto JPEG_Block, std::ofstream& JPEG_File) {
@@ -37,6 +37,7 @@ auto write_block = [](const auto JPEG_Block, std::ofstream& JPEG_File) {
 };
 
 }  // namespace recover
+
 int main(int argc, char* argv[]) noexcept
 {
   StopWatch RecoveryTime("Time JPG recovery");  // Time the runtime of the process
@@ -52,7 +53,8 @@ int main(int argc, char* argv[]) noexcept
   std::ifstream Disk_Image_FAT(Image_Filename.data(), std::ios::binary);  // Open the raw disk image file
   if (!Disk_Image_FAT.is_open()) [[unlikely]] {
     // Could not open the file
-    std::println("File {} could not be opened: File does not exist, or you do not have permission to read.", Image_Filename);
+    std::println("File {} could not be opened: File does not exist, or you do not have permission to read.",
+                 Image_Filename);
     return 1;
   }
   else [[likely]] {
@@ -105,8 +107,8 @@ int main(int argc, char* argv[]) noexcept
         }
       }
     }
-    if (JPEG_File.is_open()) { JPEG_File.close(); } // redundant because RAII
+    if (JPEG_File.is_open()) { JPEG_File.close(); }  // redundant because RAII
   }
-  if (Disk_Image_FAT.is_open()) { Disk_Image_FAT.close(); } //redundant because RAII
+  if (Disk_Image_FAT.is_open()) { Disk_Image_FAT.close(); }  // redundant because RAII
   return 0;
 }
