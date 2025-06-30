@@ -108,6 +108,7 @@ int main(int argc, char* argv[]) noexcept
       }
     }
     if (JPEG_File.is_open()) { JPEG_File.close(); }  // redundant because RAII
+    std::println ("Found JPEGs: {}",JPEG_FileNumber);
   }
   if (Disk_Image_FAT.is_open()) { Disk_Image_FAT.close(); }  // redundant because RAII
   return 0;
