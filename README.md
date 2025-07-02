@@ -35,6 +35,9 @@ A **bleeding-edge toolchain** is required:
 * **PS1/credit** — Complete and public
   See [`PS1/credit/README.md`](./PS1/credit/README.md) for full details.
 
+* **PS4/recover** — Complete and public
+  See [`PS1/recover/README.md`](./PS1/recover/README.md) for full details.
+
 > Other problem sets will be published when they are ready.
 
 ## 🛠️ Build Instructions
