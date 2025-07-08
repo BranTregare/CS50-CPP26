@@ -9,27 +9,27 @@
 namespace recover
 {
 // utility lambdas remove error prone reinterpret casts from code replace with safer bit_cast
-auto inline const_byte_ptr_to_const_char_ptr = [](const std::byte* Ptr) noexcept {
+constexpr auto const_byte_ptr_to_const_char_ptr = [](const std::byte* Ptr) noexcept {
   return std::bit_cast<const char*>(Ptr);
 };
-auto inline byte_ptr_to_char_ptr = [](std::byte* Ptr) noexcept {
+constexpr auto byte_ptr_to_char_ptr = [](std::byte* Ptr) noexcept {
   return std::bit_cast<char*>(Ptr);
 };
 
-constexpr auto is_jpeg_header = [](const auto JPEG_Block) noexcept {
+constexpr auto is_jpeg_header = [](const auto& JPEG_Block) noexcept {
   return JPEG_Block[0] == std::byte{0xff} && JPEG_Block[1] == std::byte{0xd8} && JPEG_Block[2] == std::byte{0xff} &&
                  (JPEG_Block[3] & std::byte{0xf0}) == std::byte{0xe0}
              ? true
              : false;
 };
 
-const auto read_block = [](auto FAT_Block, std::ifstream& Raw_Disk_Image) {
+constexpr auto read_block = [](auto& FAT_Block, std::ifstream& Raw_Disk_Image) {
   // Read a FAT conformant block From rawImage
   return Raw_Disk_Image.read(byte_ptr_to_char_ptr(FAT_Block.data()), FAT_Block.size()) && Raw_Disk_Image.good() ? true
                                                                                                                 : false;
 };
 
-auto write_block = [](const auto JPEG_Block, std::ofstream& JPEG_File) {
+constexpr auto write_block = [](const auto& JPEG_Block, std::ofstream& JPEG_File) {
   // Write a JPEG_Block to JPEG_File
   return JPEG_File.write(const_byte_ptr_to_const_char_ptr(JPEG_Block.data()), JPEG_Block.size()) && JPEG_File.good()
              ? true
