@@ -17,7 +17,6 @@ struct IsMdspan : std::false_type
 {
 };
 
-//T,Extents,LayoutPolicy,AccessorPolicy
 template <typename Type, typename Extents, typename LayoutPolicy, typename AccessorPolicy>
 struct IsMdspan<std::mdspan<Type, Extents, LayoutPolicy, AccessorPolicy>> : std::true_type
 {
