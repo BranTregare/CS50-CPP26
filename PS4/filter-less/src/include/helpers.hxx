@@ -7,8 +7,8 @@
 #include <mdspan>
 #include <memory>
 #include <numeric>
+#include <print>
 #include <ranges>
-#include <unordered_map>
 
 #include "bmp.hxx"
 
@@ -17,8 +17,9 @@ struct IsMdspan : std::false_type
 {
 };
 
-template <typename T, typename E, typename LP, typename AP>
-struct IsMdspan<std::mdspan<T, E, LP, AP>> : std::true_type
+//T,Extents,LayoutPolicy,AccessorPolicy
+template <typename Type, typename Extents, typename LayoutPolicy, typename AccessorPolicy>
+struct IsMdspan<std::mdspan<Type, Extents, LayoutPolicy, AccessorPolicy>> : std::true_type
 {
 };
 
@@ -26,28 +27,26 @@ template <typename T>
 static constexpr bool IS_MD_SPAN = IsMdspan<T>::value;
 
 // Standalone recursive function for Cartesian product
-template <std::size_t Dimension = 0, typename Tuple = std::tuple<>, typename Extents>
-constexpr auto cartesian_product(Tuple Current, const Extents& Current_Extents)
-{
-  constexpr auto Rank = std::tuple_size_v<Extents>;
 
-  if constexpr (Dimension == Rank) {
-    // Base case: Wrap the current tuple as a single-element view
-    return std::views::single(Current);
-  }
-  else {
-    // Recursive case: Iterate over the current dimension and append indices
-    return std::views::join(std::views::transform(
-        std::views::iota(std::tuple_element_t<Dimension, Extents>{0}, std::get<Dimension>(Current_Extents)),
-        [=](auto Index) {
-          return cartesian_product<Dimension + 1>(std::tuple_cat(Current, std::make_tuple(Index)), Current_Extents);
-        }));
-  }
+template <std::size_t Dim = 0, typename Tuple, typename Extents>
+constexpr auto cartesian_product(Tuple current, const Extents& extents)
+{
+  if constexpr (Dim == std::tuple_size_v<Extents>)
+    return std::views::single(current);
+  else
+    return std::views::join(
+        std::views::transform(
+            std::views::iota(0ul, std::get<Dim>(extents)),
+            [=](auto i) {
+              return cartesian_product<Dim + 1>(std::tuple_cat(current, std::make_tuple(i)), extents);
+            }
+            )
+        );
 }
 
-// Main md_indices function
+// index_mdspan
 template <typename MDS>
-  requires IS_MD_SPAN<MDS>  // Assumes is_mdspan_v is defined elsewhere
+  requires IS_MD_SPAN<MDS> // Assumes IS_MD_SPAN is defined elsewhere
 constexpr auto index_mdspan(const MDS& Mds)
 {
   // Extract extents into a tuple for easier access
@@ -75,7 +74,7 @@ inline auto float_to_int = [](const float Value) {
   return static_cast<std::uint8_t>(Value);
 };
 
-// enum Class and FNS to track action to take
+// enum Class and FSM to track action to take
 //
 // enum class
 enum class PositionType : std::uint8_t
@@ -91,32 +90,34 @@ enum class PositionType : std::uint8_t
   GC
 };
 
-// FNS
+////
+/// Finite State Machine (FSM)
 //
-// Class to manage pixel positions and state transitions in an image
+// manages pixel-position-based state transition in an image.
+//
 class PixelPositionFSM
 {
 private:
-  std::size_t Height_;            // Image height
-  std::size_t Width_;             // Image width
-  std::size_t Current_Position_;  // Current position in 1D space
-  PositionType Current_State_;    // Current state of the pixel position
+  std::size_t Height_; // Image height
+  std::size_t Width_; // Image width
+  std::size_t Current_Position_; // Current position in 1D space
+  PositionType Current_State_; // Current state of the pixel position
 
 public:
   // Constructor initializes the dimensions and starts at state UL
   PixelPositionFSM(const std::size_t Height, const std::size_t Width)
-      : Height_(Height), Width_(Width), Current_Position_(0ul), Current_State_(PositionType::UL)
+    : Height_(Height), Width_(Width), Current_Position_(0ul), Current_State_(PositionType::UL)
   {
   }
 
   // Getter for the current state
-  auto operator()() const
+  [[nodiscard]] auto operator()() const noexcept
   {
     return Current_State_;
   }
 
   // Increment operator to transition between states
-  auto operator++()
+  auto operator++() noexcept -> PixelPositionFSM&
   {
     const auto New_Position = Current_Position_ + 1;
     const auto Current_Row = Current_Position_ / Width_;
@@ -130,47 +131,40 @@ public:
           assert(Current_Position_ == Current_Row_Begin);
           assert(Current_Row == 0ul);
           break;
-
         case PositionType::TR:
           assert(Current_Position_ > Current_Row_Begin);
           assert(Current_Position_ < Current_Row_End);
           assert(Current_Row == 0ul);
           break;
-
         case PositionType::UR:
           assert(Current_Position_ == Current_Row_End);
           assert(Current_Row == 0ul);
           break;
-
         case PositionType::LE:
           assert(Current_Position_ == Current_Row_Begin);
           assert(Current_Row > 0ul);
           assert(Current_Row < Height_ - 1ul);
           break;
-
         case PositionType::GC:
           assert(Current_Position_ > Current_Row_Begin);
           assert(Current_Position_ < Current_Row_End);
           assert(Current_Row > 0ul);
           assert(Current_Row < Height_ - 1ul);
           break;
-
         case PositionType::RE:
           assert(Current_Position_ == Current_Row_End);
           assert(Current_Row < Height_ - 1ul);
           break;
-
         case PositionType::LL:
           assert(Current_Position_ == Current_Row_Begin);
           assert(Current_Row == Height_ - 1ul);
           break;
-
         case PositionType::BR:
           assert(Current_Position_ > Current_Row_Begin);
           assert(Current_Position_ < Current_Row_End);
           assert(Current_Row == Height_ - 1ul);
           break;
-
+        case PositionType::LR: // fallthrough
         default:
           break;
       }
@@ -182,62 +176,59 @@ public:
     // Handle transitions using a switch statement with adornments
     switch (Current_State_) {
       case PositionType::UL:
-        [[unlikely]]  // UL → TR happens only once at the very beginning
-        Current_State_ = PositionType::TR;
+        [[unlikely]] // UL → TR happens only once at the very beginning
+            Current_State_ = PositionType::TR;
         break;
-
       case PositionType::TR:
-        [[unlikely]]  // TR → UR happens only once at the end of the first row
+        [[unlikely]] // TR → UR happens only once at the end of the first row
         if (New_Position == Current_Row_End) {
           Current_State_ = PositionType::UR;
         }
         break;
-
       case PositionType::UR:
-        [[unlikely]]  // UR → LE happens only once after the first row
-        Current_State_ = PositionType::LE;
+        [[unlikely]] // UR → LE happens only once after the first row
+            Current_State_ = PositionType::LE;
         break;
-
       case PositionType::LE:
-        [[likely]]  // LE → GC happens frequently for most left-edge pixels
-        Current_State_ = PositionType::GC;
+        [[likely]] // LE → GC happens frequently for most left-edge pixels
+            Current_State_ = PositionType::GC;
         break;
-
       case PositionType::GC:
-        [[likely]]  // GC → RE happens frequently for most general-case pixels
+        [[likely]] // GC → RE happens frequently for most general-case pixels
         if (New_Position == Current_Row_End) {
           Current_State_ = PositionType::RE;
         }
         break;
-
       case PositionType::RE:
         if (Current_Row == Height_ - 2ul) {
-          [[unlikely]]  // RE → LL happens only once for the second-to-last row
-          Current_State_ = PositionType::LL;
+          [[unlikely]] // RE → LL happens only once for the second-to-last row
+              Current_State_ = PositionType::LL;
         }
         else {
-          [[likely]]  // RE → LE happens frequently for most right-edge pixels
-          Current_State_ = PositionType::LE;
+          [[likely]] // RE → LE happens frequently for most right-edge pixels
+              Current_State_ = PositionType::LE;
         }
         break;
-
       case PositionType::LL:
-        [[unlikely]]  // LL → BR happens only once at the beginning of the last row
-        Current_State_ = PositionType::BR;
+        [[unlikely]] // LL → BR happens only once at the beginning of the last row
+            Current_State_ = PositionType::BR;
         break;
-
       case PositionType::BR:
-        [[unlikely]]  // BR → LR happens only once at the end of the last row
+        [[unlikely]] // BR → LR happens only once at the end of the last row
         if (New_Position == Current_Row_End) {
           Current_State_ = PositionType::LR;
         }
         break;
-
+      case PositionType::LR:
+        [[unlikely]]
+            return *this;
       default:
-        [[unlikely]]  // Terminal state (LR) or unexpected state
-        break;
+        [[unlikely]] // unexpected state
+            std::println("Unexpected state in PixelPositionFSM");
+        std::abort();
+        //  throw std::runtime_error("Unexpected state in PixelPositionFSM");
     }
-    ++Current_Position_;  // Increment the position
+    ++Current_Position_; // Increment the position
     return *this;
   }
 };
@@ -258,38 +249,6 @@ auto grey_scale(auto& Image_Span) -> void
     auto Grey = grey_formula(Blue, Green, Red);
     // Assign the grayscale value to all three color channels;
     Image_Span[Row_Pos, Col_Pos] = RGBTRIPLE{Grey, Grey, Grey};
-  }
-}
-
-////
-/// Convert image to sepia
-//
-auto sepia(auto& Image_Span) -> void
-{
-  // Precompute sepia coefficients
-  // 0-2 blue to sepia
-  // 3-5 green to sepia
-  // 6-8 red to sepia
-  static constexpr std::array Sepia_Coefficients = {0.131f, 0.534f, 0.272f, 0.168f, 0.686f,
-                                                    0.349f, 0.189f, 0.769f, 0.393f};
-  // using std::mdspan to map std::array into a 2d array,
-  // Each row corresponds to one output channel (in BGR order)
-  // Each row contains coefficients applied to input channels (B, G, R), in that order
-  static constexpr auto Sepia_Kernel = std::mdspan(Sepia_Coefficients.cbegin(), 3, 3);
-
-  for (auto [Row_Pos, Col_Pos] : index_mdspan(Image_Span)) {
-    // Note: RGBTRIPLE stores pixels in BGR order: {Blue, Green, Red}
-    // Structured bindings match that: Blue = .rgbtBlue, etc.
-    auto& [Blue, Green, Red] = Image_Span[Row_Pos, Col_Pos];
-    auto float_color_to_uint8_t = [](const float Color) {
-      return static_cast<std::uint8_t>(std::clamp(std::round(Color), 0.0f, 255.0f));
-    };
-
-    // Apply precomputed coefficients for Sepia transformation
-    Image_Span[Row_Pos, Col_Pos] = RGBTRIPLE{
-        float_color_to_uint8_t(Blue * Sepia_Kernel[0, 0] + Green * Sepia_Kernel[0, 1] + Red * Sepia_Kernel[0, 2]),
-        float_color_to_uint8_t(Blue * Sepia_Kernel[1, 0] + Green * Sepia_Kernel[1, 1] + Red * Sepia_Kernel[1, 2]),
-        float_color_to_uint8_t(Blue * Sepia_Kernel[2, 0] + Green * Sepia_Kernel[2, 1] + Red * Sepia_Kernel[2, 2])};
   }
 }
 
@@ -323,14 +282,194 @@ inline auto xor_swap_RGBTRIPLE = [](RGBTRIPLE& lhs, RGBTRIPLE& rhs) {
 ////
 /// Reflect image horizontally
 //
-auto reflect(auto& Image_Span) -> void
+auto reflect(auto& Image_Span)
 {
   for (auto [Row_Pos, Col_Pos] : index_mdspan(Image_Span)) {
-    if (const std::size_t Width = Image_Span.extent(1); Col_Pos < Width / 2)  // we need to swap if not reached midway point
+    if (const std::size_t Width = Image_Span.extent(1); Col_Pos < Width / 2)
+    // we need to swap if not reached midway point
     {
       // xor_swap_RGBTRIPLE(Image_Span[Row_Pos, Col_Pos], Image_Span[Row_Pos, (Width - 1) - Col_Pos]);
       std::swap(Image_Span[Row_Pos, Col_Pos], Image_Span[Row_Pos, Width - 1 - Col_Pos]);
     }
+  }
+}
+
+////
+/// Convert image to sepia
+//
+auto sepia(auto& Image_Span)
+{
+  // Precompute sepia coefficients
+  // 0-2 blue to sepia
+  // 3-5 green to sepia
+  // 6-8 red to sepia
+  static constexpr std::array Sepia_Coefficients = {0.131f, 0.534f, 0.272f, 0.168f, 0.686f,
+                                                    0.349f, 0.189f, 0.769f, 0.393f};
+  // using std::mdspan to map std::array into a 2d array,
+  // Each row corresponds to one output channel (in BGR order)
+  // Each row contains coefficients applied to input channels (B, G, R), in that order
+  static constexpr auto Sepia_Kernel = std::mdspan(Sepia_Coefficients.cbegin(), 3, 3);
+
+  for (auto [Row_Pos, Col_Pos] : index_mdspan(Image_Span)) {
+    // Note: RGBTRIPLE stores pixels in BGR order: {Blue, Green, Red}
+    // Structured bindings match that: Blue = .rgbtBlue, etc.
+    auto& [Blue, Green, Red] = Image_Span[Row_Pos, Col_Pos];
+    auto float_color_to_uint8_t = [](const float Color) {
+      return static_cast<std::uint8_t>(std::clamp(std::round(Color), 0.0f, 255.0f));
+    };
+
+    // Apply precomputed coefficients for Sepia transformation
+    Image_Span[Row_Pos, Col_Pos] = RGBTRIPLE{
+        float_color_to_uint8_t(Blue * Sepia_Kernel[0, 0] + Green * Sepia_Kernel[0, 1] + Red * Sepia_Kernel[0, 2]),
+        float_color_to_uint8_t(Blue * Sepia_Kernel[1, 0] + Green * Sepia_Kernel[1, 1] + Red * Sepia_Kernel[1, 2]),
+        float_color_to_uint8_t(Blue * Sepia_Kernel[2, 0] + Green * Sepia_Kernel[2, 1] + Red * Sepia_Kernel[2, 2])};
+  }
+}
+
+////
+/// Blur image
+//
+auto blur(auto& Image_Span)
+{
+  ////
+  /// Create unique_ptr to an array of RGBTRIPLE to use as reference copy
+  //
+  auto Image_Ref = std::unique_ptr<RGBTRIPLE[]>(new RGBTRIPLE[Image_Span.extent(0) * Image_Span.extent(1)]);
+
+  ////
+  /// Create mdspan of Image_Ref with same dimensions as Image_Span
+  //
+  auto Img_Ref_Span = std::mdspan(Image_Ref.get(), Image_Span.extent(0), Image_Span.extent(1));
+  assert(Image_Span.extent(0) == Img_Ref_Span.extent(0) && Image_Span.extent(1) == Img_Ref_Span.extent(1));
+
+  ////
+  /// Copy image to reference span
+  //
+  copy_mdspan(Image_Span, Img_Ref_Span);
+
+  ////
+  /// Useful constants
+  //
+  const auto IMAGE_HEIGHT = Image_Span.extent(0);
+  const auto IMAGE_WIDTH = Image_Span.extent(1);
+
+  ////
+  /// Pixel state machine to track position
+  //
+  PixelPositionFSM Current_Pixel_State(IMAGE_HEIGHT, IMAGE_WIDTH);
+
+  ////
+  /// Iterate over all pixels
+  //
+  for (auto [Row_Pos, Col_Pos] : index_mdspan(Image_Span)) {
+    ////
+    /// Declare named lambdas for channel separation
+    //
+    auto blue_channel_func = [](const int Acc, const RGBTRIPLE& Triple) {
+      return Acc + Triple.rgbtBlue;
+    };
+    auto green_channel_func = [](const int Acc, const RGBTRIPLE& Triple) {
+      return Acc + Triple.rgbtGreen;
+    };
+    auto red_channel_func = [](const int Acc, const RGBTRIPLE& Triple) {
+      return Acc + Triple.rgbtRed;
+    };
+
+    ////
+    /// Blur one pixel using provided RGB channel lambdas
+    //
+    auto blur_pixel_formula = [&](auto& Pixels_To_Blur)-> RGBTRIPLE {
+      return RGBTRIPLE{
+          static_cast<std::uint8_t>(
+            std::round(std::accumulate(Pixels_To_Blur.begin(), Pixels_To_Blur.end(), 0, blue_channel_func) /
+                       static_cast<float>(Pixels_To_Blur.size()))),
+          static_cast<std::uint8_t>(
+            std::round(std::accumulate(Pixels_To_Blur.begin(), Pixels_To_Blur.end(), 0, green_channel_func) /
+                       static_cast<float>(Pixels_To_Blur.size()))),
+          static_cast<std::uint8_t>(
+            std::round(std::accumulate(Pixels_To_Blur.begin(), Pixels_To_Blur.end(), 0, red_channel_func) /
+                       static_cast<float>(Pixels_To_Blur.size())))};
+    };
+
+    ////
+    /// Act on position state
+    //
+    switch (Current_Pixel_State()) {
+        [[unlikely]] case PositionType::UL: {
+        std::array Pixels_To_Blur = {Img_Ref_Span[Row_Pos, Col_Pos], Img_Ref_Span[Row_Pos, Col_Pos + 1],
+                                     Img_Ref_Span[Row_Pos + 1, Col_Pos], Img_Ref_Span[Row_Pos + 1, Col_Pos + 1]};
+        Image_Span[Row_Pos, Col_Pos] = blur_pixel_formula(Pixels_To_Blur);
+      }
+      break;
+
+        [[unlikely]] case PositionType::TR: {
+        std::array Pixels_To_Blur = {Img_Ref_Span[Row_Pos, Col_Pos - 1], Img_Ref_Span[Row_Pos, Col_Pos],
+                                     Img_Ref_Span[Row_Pos, Col_Pos + 1], Img_Ref_Span[Row_Pos + 1, Col_Pos - 1],
+                                     Img_Ref_Span[Row_Pos + 1, Col_Pos], Img_Ref_Span[Row_Pos + 1, Col_Pos + 1]};
+        Image_Span[Row_Pos, Col_Pos] = blur_pixel_formula(Pixels_To_Blur);
+      }
+      break;
+
+        [[unlikely]] case PositionType::UR: {
+        std::array Pixels_To_Blur = {Img_Ref_Span[Row_Pos, Col_Pos - 1], Img_Ref_Span[Row_Pos, Col_Pos],
+                                     Img_Ref_Span[Row_Pos + 1, Col_Pos - 1], Img_Ref_Span[Row_Pos + 1, Col_Pos]};
+        Image_Span[Row_Pos, Col_Pos] = blur_pixel_formula(Pixels_To_Blur);
+      }
+      break;
+
+        [[unlikely]] case PositionType::LE: {
+        std::array Pixels_To_Blur = {Img_Ref_Span[Row_Pos - 1, Col_Pos], Img_Ref_Span[Row_Pos - 1, Col_Pos + 1],
+                                     Img_Ref_Span[Row_Pos, Col_Pos], Img_Ref_Span[Row_Pos, Col_Pos + 1],
+                                     Img_Ref_Span[Row_Pos + 1, Col_Pos], Img_Ref_Span[Row_Pos + 1, Col_Pos + 1]};
+        Image_Span[Row_Pos, Col_Pos] = blur_pixel_formula(Pixels_To_Blur);
+      }
+      break;
+
+        [[likely]] case PositionType::GC: {
+        std::array Pixels_To_Blur = {Img_Ref_Span[Row_Pos - 1, Col_Pos - 1], Img_Ref_Span[Row_Pos - 1, Col_Pos],
+                                     Img_Ref_Span[Row_Pos - 1, Col_Pos + 1], Img_Ref_Span[Row_Pos, Col_Pos - 1],
+                                     Img_Ref_Span[Row_Pos, Col_Pos], Img_Ref_Span[Row_Pos, Col_Pos + 1],
+                                     Img_Ref_Span[Row_Pos + 1, Col_Pos - 1], Img_Ref_Span[Row_Pos + 1, Col_Pos],
+                                     Img_Ref_Span[Row_Pos + 1, Col_Pos + 1]};
+        Image_Span[Row_Pos, Col_Pos] = blur_pixel_formula(Pixels_To_Blur);
+      }
+      break;
+
+        [[unlikely]] case PositionType::RE: {
+        std::array Pixels_To_Blur = {Img_Ref_Span[Row_Pos - 1, Col_Pos - 1], Img_Ref_Span[Row_Pos - 1, Col_Pos],
+                                     Img_Ref_Span[Row_Pos, Col_Pos - 1], Img_Ref_Span[Row_Pos, Col_Pos],
+                                     Img_Ref_Span[Row_Pos + 1, Col_Pos - 1], Img_Ref_Span[Row_Pos + 1, Col_Pos]};
+        Image_Span[Row_Pos, Col_Pos] = blur_pixel_formula(Pixels_To_Blur);
+      }
+      break;
+
+        [[unlikely]] case PositionType::LL: {
+        std::array Pixels_To_Blur = {Img_Ref_Span[Row_Pos - 1, Col_Pos], Img_Ref_Span[Row_Pos - 1, Col_Pos + 1],
+                                     Img_Ref_Span[Row_Pos, Col_Pos], Img_Ref_Span[Row_Pos, Col_Pos + 1]};
+        Image_Span[Row_Pos, Col_Pos] = blur_pixel_formula(Pixels_To_Blur);
+      }
+      break;
+
+        [[unlikely]] case PositionType::BR: {
+        std::array Pixels_To_Blur = {Img_Ref_Span[Row_Pos - 1, Col_Pos - 1], Img_Ref_Span[Row_Pos - 1, Col_Pos],
+                                     Img_Ref_Span[Row_Pos - 1, Col_Pos + 1], Img_Ref_Span[Row_Pos, Col_Pos - 1],
+                                     Img_Ref_Span[Row_Pos, Col_Pos], Img_Ref_Span[Row_Pos, Col_Pos + 1]};
+        Image_Span[Row_Pos, Col_Pos] = blur_pixel_formula(Pixels_To_Blur);
+      }
+      break;
+
+        [[unlikely]] case PositionType::LR: {
+        std::array Pixels_To_Blur = {Img_Ref_Span[Row_Pos - 1, Col_Pos - 1], Img_Ref_Span[Row_Pos - 1, Col_Pos],
+                                     Img_Ref_Span[Row_Pos, Col_Pos - 1], Img_Ref_Span[Row_Pos, Col_Pos]};
+        Image_Span[Row_Pos, Col_Pos] = blur_pixel_formula(Pixels_To_Blur);
+      }
+      break;
+    }
+
+    ////
+    /// Advance position state
+    //
+    ++Current_Pixel_State;
   }
 }
 
@@ -348,7 +487,7 @@ auto edges(auto& Image_Span) -> void
   /// Lambda for applying the Sobel kernel
   //
   auto g_sobel_kernel = [&](const auto& Pixel_Array, const auto& Convolution) {
-    std::tuple G_Sobel_Val{0.0f, 0.0f, 0.0f};  // Initialize tuple to black
+    std::tuple G_Sobel_Val{0.0f, 0.0f, 0.0f}; // Initialize tuple to black
     std::size_t Pos = 0;
     auto& [G_Sobel_Blue, G_Sobel_Green, G_Sobel_Red] = G_Sobel_Val;
     for (const auto& Current_Pixel : Pixel_Array) {
@@ -390,7 +529,7 @@ auto edges(auto& Image_Span) -> void
     RGBTRIPLE Ret_Val = {};
     auto& [Ret_Blue, Ret_Green, Ret_Red] = Ret_Val;
 
-    // Cap values to 255
+    // clamp values to 255
     Ret_Blue = Pixel_Blue > 255.0f ? 255 : float_to_int(Pixel_Blue);
     Ret_Green = Pixel_Green > 255.0f ? 255 : float_to_int(Pixel_Green);
     Ret_Red = Pixel_Red > 255.0f ? 255 : float_to_int(Pixel_Red);
@@ -407,28 +546,18 @@ auto edges(auto& Image_Span) -> void
   /// Copy image to reference span
   //
   copy_mdspan(Image_Span, Img_Ref_Span);
-  ///
-  // std::copy(
-
-  //     Image_Span.data_handle(),
-  //     Image_Span.data_handle() + Image_Span.extent(0) * Image_Span.extent(1),
-  //     Img_Ref_Span.data_handle()
-  //     );
-  ///
-  // for (auto [Row, Column]: index_mdspan(Image_Span)) { Img_Ref_Span[Row, Column] = Image_Span[Row, Column]; }
 
   const auto Image_Height = Image_Span.extent(0);
   const auto Image_Width = Image_Span.extent(1);
   PixelPositionFSM Current_Pixel_State(Image_Height, Image_Width);
+  constexpr RGBTRIPLE BLACK_TRIPLE{0, 0, 0};
 
   // Process each pixel in the image
   for (auto [Row_Pos, Col_Pos] : index_mdspan(Image_Span)) {
-    constexpr RGBTRIPLE BLACK_TRIPLE{0, 0, 0};
-
     // Handle different pixel positions (UL, TR, UR, etc.)
-    std::array pixel_to_compute = [&] {
+    std::array Pixel_To_SobelGXY = [&] {
       switch (Current_Pixel_State()) {
-        [[unlikely]] case PositionType::UL:
+          [[unlikely]] case PositionType::UL:
           return std::array{BLACK_TRIPLE,
                             BLACK_TRIPLE,
                             BLACK_TRIPLE,
@@ -438,7 +567,7 @@ auto edges(auto& Image_Span) -> void
                             BLACK_TRIPLE,
                             Img_Ref_Span[Row_Pos + 1, Col_Pos],
                             Img_Ref_Span[Row_Pos + 1, Col_Pos + 1]};
-        [[unlikely]] case PositionType::TR:
+          [[unlikely]] case PositionType::TR:
           return std::array{BLACK_TRIPLE,
                             BLACK_TRIPLE,
                             BLACK_TRIPLE,
@@ -448,7 +577,7 @@ auto edges(auto& Image_Span) -> void
                             Img_Ref_Span[Row_Pos + 1, Col_Pos - 1],
                             Img_Ref_Span[Row_Pos + 1, Col_Pos],
                             Img_Ref_Span[Row_Pos + 1, Col_Pos + 1]};
-        [[unlikely]] case PositionType::UR:
+          [[unlikely]] case PositionType::UR:
           return std::array{BLACK_TRIPLE,
                             BLACK_TRIPLE,
                             BLACK_TRIPLE,
@@ -458,21 +587,21 @@ auto edges(auto& Image_Span) -> void
                             Img_Ref_Span[Row_Pos + 1, Col_Pos - 1],
                             Img_Ref_Span[Row_Pos + 1, Col_Pos],
                             BLACK_TRIPLE};
-        [[unlikely]] case PositionType::LE:
+          [[unlikely]] case PositionType::LE:
           return std::array{BLACK_TRIPLE, Img_Ref_Span[Row_Pos - 1, Col_Pos], Img_Ref_Span[Row_Pos - 1, Col_Pos + 1],
-                            BLACK_TRIPLE, Img_Ref_Span[Row_Pos, Col_Pos],     Img_Ref_Span[Row_Pos, Col_Pos + 1],
+                            BLACK_TRIPLE, Img_Ref_Span[Row_Pos, Col_Pos], Img_Ref_Span[Row_Pos, Col_Pos + 1],
                             BLACK_TRIPLE, Img_Ref_Span[Row_Pos + 1, Col_Pos], Img_Ref_Span[Row_Pos + 1, Col_Pos + 1]};
-        [[likely]] case PositionType::GC:
+          [[likely]] case PositionType::GC:
           return std::array{Img_Ref_Span[Row_Pos - 1, Col_Pos - 1], Img_Ref_Span[Row_Pos - 1, Col_Pos],
                             Img_Ref_Span[Row_Pos - 1, Col_Pos + 1], Img_Ref_Span[Row_Pos, Col_Pos - 1],
-                            Img_Ref_Span[Row_Pos, Col_Pos],         Img_Ref_Span[Row_Pos, Col_Pos + 1],
+                            Img_Ref_Span[Row_Pos, Col_Pos], Img_Ref_Span[Row_Pos, Col_Pos + 1],
                             Img_Ref_Span[Row_Pos + 1, Col_Pos - 1], Img_Ref_Span[Row_Pos + 1, Col_Pos],
                             Img_Ref_Span[Row_Pos + 1, Col_Pos + 1]};
-        [[unlikely]] case PositionType::RE:
+          [[unlikely]] case PositionType::RE:
           return std::array{Img_Ref_Span[Row_Pos - 1, Col_Pos - 1], Img_Ref_Span[Row_Pos - 1, Col_Pos], BLACK_TRIPLE,
-                            Img_Ref_Span[Row_Pos, Col_Pos - 1],     Img_Ref_Span[Row_Pos, Col_Pos],     BLACK_TRIPLE,
+                            Img_Ref_Span[Row_Pos, Col_Pos - 1], Img_Ref_Span[Row_Pos, Col_Pos], BLACK_TRIPLE,
                             Img_Ref_Span[Row_Pos + 1, Col_Pos - 1], Img_Ref_Span[Row_Pos + 1, Col_Pos], BLACK_TRIPLE};
-        [[unlikely]] case PositionType::LL:
+          [[unlikely]] case PositionType::LL:
           return std::array{BLACK_TRIPLE,
                             Img_Ref_Span[Row_Pos - 1, Col_Pos],
                             Img_Ref_Span[Row_Pos - 1, Col_Pos + 1],
@@ -482,7 +611,7 @@ auto edges(auto& Image_Span) -> void
                             BLACK_TRIPLE,
                             BLACK_TRIPLE,
                             BLACK_TRIPLE};
-        [[unlikely]] case PositionType::BR:
+          [[unlikely]] case PositionType::BR:
           return std::array{Img_Ref_Span[Row_Pos - 1, Col_Pos - 1],
                             Img_Ref_Span[Row_Pos - 1, Col_Pos],
                             Img_Ref_Span[Row_Pos - 1, Col_Pos + 1],
@@ -492,7 +621,7 @@ auto edges(auto& Image_Span) -> void
                             BLACK_TRIPLE,
                             BLACK_TRIPLE,
                             BLACK_TRIPLE};
-        [[unlikely]] case PositionType::LR:
+          [[unlikely]] case PositionType::LR:
           return std::array{Img_Ref_Span[Row_Pos - 1, Col_Pos - 1],
                             Img_Ref_Span[Row_Pos - 1, Col_Pos],
                             BLACK_TRIPLE,
@@ -503,158 +632,14 @@ auto edges(auto& Image_Span) -> void
                             BLACK_TRIPLE,
                             BLACK_TRIPLE};
         default:
-          throw std::runtime_error("Unexpected PositionType");
+          std::println("Unexpected PositionType");
+          std::abort();
+          //throw std::runtime_error("Unexpected PositionType");
       }
     }();
     // Apply the Sobel formula
-    Image_Span[Row_Pos, Col_Pos] = sobel_formula(pixel_to_compute);
+    Image_Span[Row_Pos, Col_Pos] = sobel_formula(Pixel_To_SobelGXY);
     // Update pixel state
-    ++Current_Pixel_State;
-  }
-}
-
-////
-/// Blur image
-//
-auto blur(auto& Image_Span) -> void
-{
-  ////
-  /// Create unique_ptr to an array of RGBTRIPLE to use as reference copy
-  //
-  const std::unique_ptr<RGBTRIPLE[]> Image_Ref(new RGBTRIPLE[Image_Span.extent(0) * Image_Span.extent(1)]);
-
-  ////
-  /// Create mdspan of Image_Ref with same dimensions as Image_Span
-  //
-  auto Img_Ref_Span = std::mdspan(Image_Ref.get(), Image_Span.extent(0), Image_Span.extent(1));
-  assert(Image_Span.extent(0) == Img_Ref_Span.extent(0) && Image_Span.extent(1) == Img_Ref_Span.extent(1));
-
-  ////
-  /// Copy image to reference span
-  //
-  copy_mdspan(Image_Span, Img_Ref_Span);
-  ///
-  // std::copy(
-  //     Image_Span.data_handle(),
-  //     Image_Span.data_handle() + Image_Span.extent(0) * Image_Span.extent(1),
-  //     Img_Ref_Span.data_handle()
-  //     );
-  ///
-  // for (auto [Row, Column]: index_mdspan(Image_Span)) { Img_Ref_Span[Row, Column] = Image_Span[Row, Column]; }
-
-  ////
-  /// Useful constants
-  //
-  const auto IMAGE_HEIGHT = Image_Span.extent(0);
-  const auto IMAGE_WIDTH = Image_Span.extent(1);
-
-  ////
-  /// Pixel state machine to track position
-  //
-  PixelPositionFSM Current_Pixel_State(IMAGE_HEIGHT, IMAGE_WIDTH);
-
-  ////
-  /// Iterate over all pixels
-  //
-  for (auto [Row_Pos, Col_Pos] : index_mdspan(Image_Span)) {
-    ////
-    /// Declare named lambdas for channel separation
-    //
-    auto blue_channel_func = [](const int Acc, const RGBTRIPLE& Triple) {
-      return Acc + Triple.rgbtBlue;
-    };
-    auto green_channel_func = [](const int Acc, const RGBTRIPLE& Triple) {
-      return Acc + Triple.rgbtGreen;
-    };
-    auto red_channel_func = [](const int Acc, const RGBTRIPLE& Triple) {
-      return Acc + Triple.rgbtRed;
-    };
-
-    ////
-    /// Blur one pixel using provided RGB channel lambdas
-    //
-    auto blur_pixel_formula = [&](auto& Pixels_To_Blur) -> RGBTRIPLE {
-      return RGBTRIPLE{
-          static_cast<std::uint8_t>(
-              std::round(std::accumulate(Pixels_To_Blur.begin(), Pixels_To_Blur.end(), 0, blue_channel_func) /
-                         static_cast<float>(Pixels_To_Blur.size()))),
-          static_cast<std::uint8_t>(
-              std::round(std::accumulate(Pixels_To_Blur.begin(), Pixels_To_Blur.end(), 0, green_channel_func) /
-                         static_cast<float>(Pixels_To_Blur.size()))),
-          static_cast<std::uint8_t>(
-              std::round(std::accumulate(Pixels_To_Blur.begin(), Pixels_To_Blur.end(), 0, red_channel_func) /
-                         static_cast<float>(Pixels_To_Blur.size())))};
-    };
-
-    ////
-    /// Act on position state
-    //
-    switch (Current_Pixel_State()) {
-      [[unlikely]] case PositionType::UL: {
-        std::array Pixels_To_Blur = {Img_Ref_Span[Row_Pos, Col_Pos], Img_Ref_Span[Row_Pos, Col_Pos + 1],
-                                     Img_Ref_Span[Row_Pos + 1, Col_Pos], Img_Ref_Span[Row_Pos + 1, Col_Pos + 1]};
-        Image_Span[Row_Pos, Col_Pos] = blur_pixel_formula(Pixels_To_Blur);
-      } break;
-
-      [[unlikely]] case PositionType::TR: {
-        std::array Pixels_To_Blur = {Img_Ref_Span[Row_Pos, Col_Pos - 1], Img_Ref_Span[Row_Pos, Col_Pos],
-                                     Img_Ref_Span[Row_Pos, Col_Pos + 1], Img_Ref_Span[Row_Pos + 1, Col_Pos - 1],
-                                     Img_Ref_Span[Row_Pos + 1, Col_Pos], Img_Ref_Span[Row_Pos + 1, Col_Pos + 1]};
-        Image_Span[Row_Pos, Col_Pos] = blur_pixel_formula(Pixels_To_Blur);
-      } break;
-
-      [[unlikely]] case PositionType::UR: {
-        std::array Pixels_To_Blur = {Img_Ref_Span[Row_Pos, Col_Pos - 1], Img_Ref_Span[Row_Pos, Col_Pos],
-                                     Img_Ref_Span[Row_Pos + 1, Col_Pos - 1], Img_Ref_Span[Row_Pos + 1, Col_Pos]};
-        Image_Span[Row_Pos, Col_Pos] = blur_pixel_formula(Pixels_To_Blur);
-      } break;
-
-      [[unlikely]] case PositionType::LE: {
-        std::array Pixels_To_Blur = {Img_Ref_Span[Row_Pos - 1, Col_Pos], Img_Ref_Span[Row_Pos - 1, Col_Pos + 1],
-                                     Img_Ref_Span[Row_Pos, Col_Pos],     Img_Ref_Span[Row_Pos, Col_Pos + 1],
-                                     Img_Ref_Span[Row_Pos + 1, Col_Pos], Img_Ref_Span[Row_Pos + 1, Col_Pos + 1]};
-        Image_Span[Row_Pos, Col_Pos] = blur_pixel_formula(Pixels_To_Blur);
-      } break;
-
-      [[likely]] case PositionType::GC: {
-        std::array Pixels_To_Blur = {Img_Ref_Span[Row_Pos - 1, Col_Pos - 1], Img_Ref_Span[Row_Pos - 1, Col_Pos],
-                                     Img_Ref_Span[Row_Pos - 1, Col_Pos + 1], Img_Ref_Span[Row_Pos, Col_Pos - 1],
-                                     Img_Ref_Span[Row_Pos, Col_Pos],         Img_Ref_Span[Row_Pos, Col_Pos + 1],
-                                     Img_Ref_Span[Row_Pos + 1, Col_Pos - 1], Img_Ref_Span[Row_Pos + 1, Col_Pos],
-                                     Img_Ref_Span[Row_Pos + 1, Col_Pos + 1]};
-        Image_Span[Row_Pos, Col_Pos] = blur_pixel_formula(Pixels_To_Blur);
-      } break;
-
-      [[unlikely]] case PositionType::RE: {
-        std::array Pixels_To_Blur = {Img_Ref_Span[Row_Pos - 1, Col_Pos - 1], Img_Ref_Span[Row_Pos - 1, Col_Pos],
-                                     Img_Ref_Span[Row_Pos, Col_Pos - 1],     Img_Ref_Span[Row_Pos, Col_Pos],
-                                     Img_Ref_Span[Row_Pos + 1, Col_Pos - 1], Img_Ref_Span[Row_Pos + 1, Col_Pos]};
-        Image_Span[Row_Pos, Col_Pos] = blur_pixel_formula(Pixels_To_Blur);
-      } break;
-
-      [[unlikely]] case PositionType::LL: {
-        std::array Pixels_To_Blur = {Img_Ref_Span[Row_Pos - 1, Col_Pos], Img_Ref_Span[Row_Pos - 1, Col_Pos + 1],
-                                     Img_Ref_Span[Row_Pos, Col_Pos], Img_Ref_Span[Row_Pos, Col_Pos + 1]};
-        Image_Span[Row_Pos, Col_Pos] = blur_pixel_formula(Pixels_To_Blur);
-      } break;
-
-      [[unlikely]] case PositionType::BR: {
-        std::array Pixels_To_Blur = {Img_Ref_Span[Row_Pos - 1, Col_Pos - 1], Img_Ref_Span[Row_Pos - 1, Col_Pos],
-                                     Img_Ref_Span[Row_Pos - 1, Col_Pos + 1], Img_Ref_Span[Row_Pos, Col_Pos - 1],
-                                     Img_Ref_Span[Row_Pos, Col_Pos],         Img_Ref_Span[Row_Pos, Col_Pos + 1]};
-        Image_Span[Row_Pos, Col_Pos] = blur_pixel_formula(Pixels_To_Blur);
-      } break;
-
-      [[unlikely]] case PositionType::LR: {
-        std::array Pixels_To_Blur = {Img_Ref_Span[Row_Pos - 1, Col_Pos - 1], Img_Ref_Span[Row_Pos - 1, Col_Pos],
-                                     Img_Ref_Span[Row_Pos, Col_Pos - 1], Img_Ref_Span[Row_Pos, Col_Pos]};
-        Image_Span[Row_Pos, Col_Pos] = blur_pixel_formula(Pixels_To_Blur);
-      } break;
-    }
-
-    ////
-    /// Advance position state
-    //
     ++Current_Pixel_State;
   }
 }
