@@ -57,21 +57,21 @@ constexpr auto index_mdspan(const MDS& Mds)
   }(std::make_index_sequence<Rank>{});
 
   // Generate Cartesian product
-  return cartesian_product<0>(std::tuple<>{}, Extents);
+  return cartesian_product<0>(std::tuple{}, Extents);
 }
 
-auto copy_mdspan = [](auto const& src, auto& dst) {
+inline auto copy_mdspan = [](auto const& src, auto& dst) {
   assert(src.extent(0) == dst.extent(0) && src.extent(1) == dst.extent(1));
-  std::copy(src.data_handle(), src.data_handle() + (src.extent(0) * src.extent(1)), dst.data_handle());
+  std::copy(src.data_handle(), src.data_handle() + src.extent(0) * src.extent(1), dst.data_handle());
 };
 
 ////
 /// type conversion lambdas
 //
-inline auto int_to_float = [](std::uint8_t Value) {
+inline auto int_to_float = [](const std::uint8_t Value) {
   return static_cast<float>(Value);
 };
-inline auto float_to_int = [](float Value) {
+inline auto float_to_int = [](const float Value) {
   return static_cast<std::uint8_t>(Value);
 };
 
@@ -102,27 +102,15 @@ private:
   std::size_t Current_Position_;  // Current position in 1D space
   PositionType Current_State_;    // Current state of the pixel position
 
-  // Transition table for default state changes
-  const std::unordered_map<PositionType, PositionType> STATE_TRANSITION_TABLE = {
-      {PositionType::UL, PositionType::TR},  // UL → TR
-      {PositionType::TR, PositionType::UR},  // TR → UR
-      {PositionType::UR, PositionType::LE},  // UR → LE
-      {PositionType::LE, PositionType::GC},  // LE → GC
-      {PositionType::GC, PositionType::RE},  // GC → RE
-      {PositionType::RE, PositionType::LE},  // RE → LE (loop)
-      {PositionType::LL, PositionType::BR},  // LL → BR
-      {PositionType::BR, PositionType::LR}   // BR → LR
-  };
-
 public:
   // Constructor initializes the dimensions and starts at state UL
-  PixelPositionFSM(std::size_t Height, std::size_t Width)
+  PixelPositionFSM(const std::size_t Height, const std::size_t Width)
       : Height_(Height), Width_(Width), Current_Position_(0ul), Current_State_(PositionType::UL)
   {
   }
 
   // Getter for the current state
-  inline auto operator()() const
+  auto operator()() const
   {
     return Current_State_;
   }
@@ -130,13 +118,13 @@ public:
   // Increment operator to transition between states
   auto operator++()
   {
-    auto New_Position = Current_Position_ + 1;
-    auto Current_Row = Current_Position_ / Width_;
-    [[maybe_unused]] auto Current_Row_Begin = Current_Row * Width_;
-    auto Current_Row_End = ((Current_Row + 1) * Width_) - 1;
+    const auto New_Position = Current_Position_ + 1;
+    const auto Current_Row = Current_Position_ / Width_;
+    [[maybe_unused]] const auto Current_Row_Begin = Current_Row * Width_;
+    const auto Current_Row_End = (Current_Row + 1) * Width_ - 1;
 
     // Helper lambda to perform assertions
-    auto assertState = [&](PositionType state) {
+    auto assertState = [&](const PositionType state) {
       switch (state) {
         case PositionType::UL:
           assert(Current_Position_ == Current_Row_Begin);
@@ -157,30 +145,30 @@ public:
         case PositionType::LE:
           assert(Current_Position_ == Current_Row_Begin);
           assert(Current_Row > 0ul);
-          assert(Current_Row < (Height_ - 1ul));
+          assert(Current_Row < Height_ - 1ul);
           break;
 
         case PositionType::GC:
           assert(Current_Position_ > Current_Row_Begin);
           assert(Current_Position_ < Current_Row_End);
           assert(Current_Row > 0ul);
-          assert(Current_Row < (Height_ - 1ul));
+          assert(Current_Row < Height_ - 1ul);
           break;
 
         case PositionType::RE:
           assert(Current_Position_ == Current_Row_End);
-          assert(Current_Row < (Height_ - 1ul));
+          assert(Current_Row < Height_ - 1ul);
           break;
 
         case PositionType::LL:
           assert(Current_Position_ == Current_Row_Begin);
-          assert(Current_Row == (Height_ - 1ul));
+          assert(Current_Row == Height_ - 1ul);
           break;
 
         case PositionType::BR:
           assert(Current_Position_ > Current_Row_Begin);
           assert(Current_Position_ < Current_Row_End);
-          assert(Current_Row == (Height_ - 1ul));
+          assert(Current_Row == Height_ - 1ul);
           break;
 
         default:
@@ -261,7 +249,7 @@ auto grey_scale(auto& Image_Span) -> void
 {
   for (auto [Row_Pos, Col_Pos] : index_mdspan(Image_Span)) {
     // Lambda to calculate the grayscale value
-    auto grey_formula = [](std::uint8_t Blue, std::uint8_t Green, std::uint8_t Red) -> std::uint8_t {
+    auto grey_formula = [](const std::uint8_t Blue, const std::uint8_t Green, const std::uint8_t Red) -> std::uint8_t {
       return float_to_int(std::round((int_to_float(Blue) + int_to_float(Green) + int_to_float(Red)) / 3.0f));
     };
     // Destructure the RGBTRIPLE at the current position into Blue, Green, and Red
@@ -287,13 +275,13 @@ auto sepia(auto& Image_Span) -> void
   // using std::mdspan to map std::array into a 2d array,
   // Each row corresponds to one output channel (in BGR order)
   // Each row contains coefficients applied to input channels (B, G, R), in that order
-  static constexpr std::mdspan Sepia_Kernel = std::mdspan(Sepia_Coefficients.cbegin(), 3, 3);
+  static constexpr auto Sepia_Kernel = std::mdspan(Sepia_Coefficients.cbegin(), 3, 3);
 
   for (auto [Row_Pos, Col_Pos] : index_mdspan(Image_Span)) {
     // Note: RGBTRIPLE stores pixels in BGR order: {Blue, Green, Red}
     // Structured bindings match that: Blue = .rgbtBlue, etc.
     auto& [Blue, Green, Red] = Image_Span[Row_Pos, Col_Pos];
-    auto float_color_to_uint8_t = [](float Color) {
+    auto float_color_to_uint8_t = [](const float Color) {
       return static_cast<std::uint8_t>(std::clamp(std::round(Color), 0.0f, 255.0f));
     };
 
@@ -338,11 +326,10 @@ inline auto xor_swap_RGBTRIPLE = [](RGBTRIPLE& lhs, RGBTRIPLE& rhs) {
 auto reflect(auto& Image_Span) -> void
 {
   for (auto [Row_Pos, Col_Pos] : index_mdspan(Image_Span)) {
-    std::size_t Width = Image_Span.extent(1);
-    if (Col_Pos < (Width / 2))  // we need to swap if not reached midway point
+    if (const std::size_t Width = Image_Span.extent(1); Col_Pos < Width / 2)  // we need to swap if not reached midway point
     {
       // xor_swap_RGBTRIPLE(Image_Span[Row_Pos, Col_Pos], Image_Span[Row_Pos, (Width - 1) - Col_Pos]);
-      std::swap(Image_Span[Row_Pos, Col_Pos], Image_Span[Row_Pos, (Width - 1) - Col_Pos]);
+      std::swap(Image_Span[Row_Pos, Col_Pos], Image_Span[Row_Pos, Width - 1 - Col_Pos]);
     }
   }
 }
@@ -355,8 +342,8 @@ auto edges(auto& Image_Span) -> void
   ////
   /// Setup Sobel GX and GY kernels
   //
-  constexpr std::array<float, 9> GX_Kernel{-1.0f, 0.0f, +1.0f, -2.0f, 0.0f, +2.0f, -1.0f, 0.0f, +1.0f};
-  constexpr std::array<float, 9> GY_Kernel{-1.0f, -2.0f, -1.0f, 0.0f, 0.0f, 0.0f, +1.0f, +2.0f, +1.0f};
+  constexpr std::array GX_Kernel{-1.0f, 0.0f, +1.0f, -2.0f, 0.0f, +2.0f, -1.0f, 0.0f, +1.0f};
+  constexpr std::array GY_Kernel{-1.0f, -2.0f, -1.0f, 0.0f, 0.0f, 0.0f, +1.0f, +2.0f, +1.0f};
   ////
   /// Lambda for applying the Sobel kernel
   //
@@ -370,7 +357,7 @@ auto edges(auto& Image_Span) -> void
       G_Sobel_Green += Convolution.at(Pos) * PixelGreen;
       G_Sobel_Red += Convolution.at(Pos) * PixelRed;
       ++Pos;
-    };
+    }
     // Square blue, green, and red
     G_Sobel_Blue = std::pow(G_Sobel_Blue, 2.0f);
     G_Sobel_Green = std::pow(G_Sobel_Green, 2.0f);
@@ -380,7 +367,7 @@ auto edges(auto& Image_Span) -> void
   ////
   /// Combine and round GX and GY
   //
-  auto Combine_GX_GY = [](float GX, float GY) {
+  auto Combine_GX_GY = [](const float GX, const float GY) {
     return std::round(std::sqrt(GX * GX + GY * GY));
   };
   ////
@@ -422,12 +409,13 @@ auto edges(auto& Image_Span) -> void
   copy_mdspan(Image_Span, Img_Ref_Span);
   ///
   // std::copy(
+
   //     Image_Span.data_handle(),
   //     Image_Span.data_handle() + Image_Span.extent(0) * Image_Span.extent(1),
   //     Img_Ref_Span.data_handle()
   //     );
   ///
-  // for (auto [Row, Column] : index_mdspan(Image_Span)) { Img_Ref_Span[Row, Column] = Image_Span[Row, Column]; }
+  // for (auto [Row, Column]: index_mdspan(Image_Span)) { Img_Ref_Span[Row, Column] = Image_Span[Row, Column]; }
 
   const auto Image_Height = Image_Span.extent(0);
   const auto Image_Width = Image_Span.extent(1);
@@ -438,7 +426,7 @@ auto edges(auto& Image_Span) -> void
     constexpr RGBTRIPLE BLACK_TRIPLE{0, 0, 0};
 
     // Handle different pixel positions (UL, TR, UR, etc.)
-    std::array pixel_to_compute = [&]() {
+    std::array pixel_to_compute = [&] {
       switch (Current_Pixel_State()) {
         [[unlikely]] case PositionType::UL:
           return std::array{BLACK_TRIPLE,
@@ -515,7 +503,7 @@ auto edges(auto& Image_Span) -> void
                             BLACK_TRIPLE,
                             BLACK_TRIPLE};
         default:
-          [[noreturn]] throw std::runtime_error("Unexpected PositionType");
+          throw std::runtime_error("Unexpected PositionType");
       }
     }();
     // Apply the Sobel formula
@@ -533,7 +521,7 @@ auto blur(auto& Image_Span) -> void
   ////
   /// Create unique_ptr to an array of RGBTRIPLE to use as reference copy
   //
-  std::unique_ptr<RGBTRIPLE[]> Image_Ref(new RGBTRIPLE[Image_Span.extent(0) * Image_Span.extent(1)]);
+  const std::unique_ptr<RGBTRIPLE[]> Image_Ref(new RGBTRIPLE[Image_Span.extent(0) * Image_Span.extent(1)]);
 
   ////
   /// Create mdspan of Image_Ref with same dimensions as Image_Span
@@ -552,7 +540,7 @@ auto blur(auto& Image_Span) -> void
   //     Img_Ref_Span.data_handle()
   //     );
   ///
-  // for (auto [Row, Column] : index_mdspan(Image_Span)) { Img_Ref_Span[Row, Column] = Image_Span[Row, Column]; }
+  // for (auto [Row, Column]: index_mdspan(Image_Span)) { Img_Ref_Span[Row, Column] = Image_Span[Row, Column]; }
 
   ////
   /// Useful constants
@@ -572,13 +560,13 @@ auto blur(auto& Image_Span) -> void
     ////
     /// Declare named lambdas for channel separation
     //
-    auto blue_channel_func = [](int Acc, const RGBTRIPLE& Triple) {
+    auto blue_channel_func = [](const int Acc, const RGBTRIPLE& Triple) {
       return Acc + Triple.rgbtBlue;
     };
-    auto green_channel_func = [](int Acc, const RGBTRIPLE& Triple) {
+    auto green_channel_func = [](const int Acc, const RGBTRIPLE& Triple) {
       return Acc + Triple.rgbtGreen;
     };
-    auto red_channel_func = [](int Acc, const RGBTRIPLE& Triple) {
+    auto red_channel_func = [](const int Acc, const RGBTRIPLE& Triple) {
       return Acc + Triple.rgbtRed;
     };
 

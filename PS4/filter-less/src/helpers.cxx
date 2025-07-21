@@ -1,4 +1,4 @@
-#include "include/helpers.hxx"
+//#include "include/helpers.hxx"
 /*
 // Convert image to grayscale
 // void grayscale(int height, int width, RGBTRIPLE image[height][width]) { return; }
